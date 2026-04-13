@@ -1,35 +1,26 @@
-import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Search, ShoppingCart, Heart, User, ChevronDown, Menu, X, LogOut, Package, Settings } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Search, ShoppingCart, Heart, User, Menu, X, ChevronDown, LogOut, Package, Settings } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useCart } from '@/context/CartContext'
-import { supabase } from '@/lib/supabase'
-import { initials } from '@/lib/utils'
 
 export default function Navbar() {
-  const { user, profile, isLoggedIn, isAdmin, signOut } = useAuth()
+  const { isLoggedIn, profile, signOut } = useAuth()
   const { itemCount } = useCart()
   const navigate  = useNavigate()
-  const location  = useLocation()
 
-  const [query, setQuery]           = useState('')
-  const [menuOpen, setMenuOpen]     = useState(false)
+  const [categories, setCategories]   = useState([])
+  const [search, setSearch]           = useState('')
+  const [mobileOpen, setMobileOpen]   = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
-  const [categories, setCategories] = useState([])
   const accountRef = useRef(null)
 
-  // Load categories from Supabase
   useEffect(() => {
-    supabase
-      .from('categories')
-      .select('id, name, slug, icon')
-      .eq('is_active', true)
-      .order('sort_order')
-      .limit(12)
+    supabase.from('categories').select('id, name, slug, icon').eq('is_active', true).order('sort_order').limit(8)
       .then(({ data }) => setCategories(data ?? []))
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e) {
       if (accountRef.current && !accountRef.current.contains(e.target)) {
@@ -40,194 +31,255 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Close mobile menu on route change
-  useEffect(() => { setMenuOpen(false) }, [location])
-
   function handleSearch(e) {
     e.preventDefault()
-    if (query.trim()) navigate('/search?q=' + encodeURIComponent(query.trim()))
+    if (search.trim()) {
+      navigate('/products?q=' + encodeURIComponent(search.trim()))
+      setSearch('')
+      setMobileOpen(false)
+    }
   }
 
   async function handleSignOut() {
     await signOut()
+    setAccountOpen(false)
     navigate('/')
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      {/* Main top bar */}
+    <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 50 }}>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-4 h-16">
 
-          {/* Mobile menu toggle */}
-          <button
-            className="md:hidden p-1 text-gray-600"
-            onClick={() => setMenuOpen(o => !o)}
-          >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-
-          {/* Logo - TODO: replace span with your <img> logo */}
-          <Link to="/" className="flex-shrink-0">
-            <span className="font-bold text-2xl text-blue-600">
-              Happy<span className="text-gray-800">Bags</span>
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+            <img
+              src="/logo.png"
+              alt="HappyBags"
+              style={{
+                width: '38px',
+                height: '38px',
+                objectFit: 'contain',
+                borderRadius: '8px',
+              }}
+              onError={e => { e.target.style.display = 'none' }}
+            />
+            <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.3px' }}>
+              <span style={{ color: '#2563eb' }}>Happy</span>
+              <span style={{ color: '#1e293b' }}>Bags</span>
             </span>
           </Link>
 
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-2xl hidden sm:flex">
+          {/* Search — desktop */}
+          <form onSubmit={handleSearch} className="flex-1 hidden md:flex max-w-xl">
             <div className="flex w-full rounded-lg overflow-hidden border border-gray-300 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
               <input
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 placeholder="Search products, brands and categories"
                 className="flex-1 px-4 py-2.5 text-sm outline-none bg-white"
               />
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 transition-colors"
-              >
-                <Search size={18} />
+              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 flex items-center justify-center transition-colors">
+                <Search size={16} />
               </button>
             </div>
           </form>
 
           {/* Right actions */}
-          <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <div className="flex items-center gap-1 md:gap-3 ml-auto md:ml-0">
 
             {/* Account dropdown */}
             <div className="relative" ref={accountRef}>
               <button
-                onClick={() => isLoggedIn ? setAccountOpen(o => !o) : navigate('/login')}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700"
+                onClick={() => setAccountOpen(v => !v)}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-700"
               >
-                {isLoggedIn ? (
-                  <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
-                    {initials(profile?.full_name || user?.email)}
-                  </div>
-                ) : (
-                  <User size={20} />
-                )}
-                <span className="hidden sm:block">
+                <div style={{
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: isLoggedIn ? '#dbeafe' : '#f1f5f9',
+                  color: isLoggedIn ? '#2563eb' : '#64748b',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '12px', fontWeight: 700, flexShrink: 0,
+                }}>
+                  {isLoggedIn ? (profile?.full_name?.[0] || 'U').toUpperCase() : <User size={14} />}
+                </div>
+                <span className="hidden md:block">
                   {isLoggedIn ? (profile?.full_name?.split(' ')[0] || 'Account') : 'Account'}
                 </span>
-                <ChevronDown size={14} className="hidden sm:block" />
+                <ChevronDown size={14} className="hidden md:block text-gray-400" />
               </button>
 
-              {accountOpen && isLoggedIn && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-                  <div className="px-4 py-2.5 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-800 truncate">{profile?.full_name || 'Customer'}</p>
-                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                  </div>
-                  <Link to="/profile"  onClick={() => setAccountOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    <Settings size={15} /> My Account
-                  </Link>
-                  <Link to="/orders"   onClick={() => setAccountOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    <Package size={15} /> My Orders
-                  </Link>
-                  <Link to="/wishlist" onClick={() => setAccountOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    <Heart size={15} /> Wishlist
-                  </Link>
-                  {isAdmin && (
-                    <Link to="/admin" onClick={() => setAccountOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors font-medium">
-                      Admin Panel
-                    </Link>
+              {accountOpen && (
+                <div style={{
+                  position: 'absolute', top: '110%', right: 0,
+                  background: '#fff', border: '1px solid #e2e8f0',
+                  borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  minWidth: '180px', zIndex: 100, overflow: 'hidden',
+                }}>
+                  {isLoggedIn ? (
+                    <>
+                      <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{profile?.full_name || 'User'}</p>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{profile?.email || ''}</p>
+                      </div>
+                      {[
+                        { to: '/profile', icon: User,    label: 'My Profile' },
+                        { to: '/orders',  icon: Package, label: 'My Orders' },
+                      ].map(({ to, icon: Icon, label }) => (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setAccountOpen(false)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', fontSize: '13px', color: '#374151',
+                            textDecoration: 'none', transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Icon size={15} className="text-gray-400" /> {label}
+                        </Link>
+                      ))}
+                      <button
+                        onClick={handleSignOut}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 16px', fontSize: '13px', color: '#ef4444',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          width: '100%', textAlign: 'left',
+                          borderTop: '1px solid #f1f5f9', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <LogOut size={15} /> Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/login"
+                        onClick={() => setAccountOpen(false)}
+                        style={{
+                          display: 'block', padding: '12px 16px', fontSize: '13px',
+                          fontWeight: 600, color: '#2563eb', textDecoration: 'none',
+                          borderBottom: '1px solid #f1f5f9',
+                        }}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setAccountOpen(false)}
+                        style={{
+                          display: 'block', padding: '12px 16px', fontSize: '13px',
+                          color: '#374151', textDecoration: 'none',
+                        }}
+                      >
+                        Create Account
+                      </Link>
+                    </>
                   )}
-                  <div className="border-t border-gray-100 mt-1">
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut size={15} /> Sign out
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className="p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700">
-              <Heart size={22} />
+            <Link to="/wishlist" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">
+              <Heart size={20} />
             </Link>
 
             {/* Cart */}
-            <Link to="/cart" className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-700">
-              <ShoppingCart size={22} />
-              <span className="hidden sm:block text-sm">Cart</span>
+            <Link to="/cart" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600">
+              <ShoppingCart size={20} />
               {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
-                  {itemCount > 99 ? '99+' : itemCount}
+                <span style={{
+                  position: 'absolute', top: '2px', right: '2px',
+                  background: '#2563eb', color: '#fff',
+                  borderRadius: '50%', width: '18px', height: '18px',
+                  fontSize: '10px', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {itemCount > 9 ? '9+' : itemCount}
                 </span>
               )}
             </Link>
+
+            {/* Mobile menu toggle */}
+            <button onClick={() => setMobileOpen(v => !v)} className="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600">
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile search */}
-        <div className="pb-3 sm:hidden">
-          <form onSubmit={handleSearch} className="flex rounded-lg overflow-hidden border border-gray-300">
+        {/* Category nav — desktop */}
+        {categories.length > 0 && (
+          <div className="hidden md:flex items-center gap-1 pb-2 overflow-x-auto">
+            <Link
+              to="/products"
+              className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+            >
+              All Products
+            </Link>
+            {categories.map(cat => (
+              <Link
+                key={cat.id}
+                to={'/category/' + cat.slug}
+                className="flex-shrink-0 flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+              >
+                {cat.icon && <span>{cat.icon}</span>}
+                {cat.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div style={{ background: '#fff', borderTop: '1px solid #e2e8f0', padding: '16px' }}>
+          {/* Mobile search */}
+          <form onSubmit={handleSearch} className="flex mb-4">
             <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
               placeholder="Search products..."
-              className="flex-1 px-3 py-2.5 text-sm outline-none"
+              className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2.5 text-sm outline-none"
             />
-            <button type="submit" className="bg-blue-600 text-white px-4">
+            <button type="submit" className="bg-blue-600 text-white px-4 rounded-r-lg">
               <Search size={16} />
             </button>
           </form>
-        </div>
-      </div>
 
-      {/* Category nav bar - dynamically loaded from Supabase */}
-      <div className="border-t border-gray-100 bg-gray-50 hidden md:block">
-        <div className="max-w-7xl mx-auto px-4">
-          <nav className="flex items-center gap-1 h-10 overflow-x-auto no-scrollbar">
-            <Link
-              to="/products"
-              className="whitespace-nowrap px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium flex-shrink-0"
-            >
+          {/* Mobile categories */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Link to="/products" onClick={() => setMobileOpen(false)} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700">
               All Products
             </Link>
             {categories.map(cat => (
               <Link
                 key={cat.id}
                 to={'/category/' + cat.slug}
-                className="whitespace-nowrap px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
+                onClick={() => setMobileOpen(false)}
+                className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700"
               >
-                {cat.icon && <span style={{fontSize:'14px'}}>{cat.icon}</span>}
-                {cat.name}
+                {cat.icon} {cat.name}
               </Link>
             ))}
-          </nav>
-        </div>
-      </div>
+          </div>
 
-      {/* Mobile sidebar menu */}
-      {menuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-          {/* Mobile search already shown above */}
-          <nav className="p-3 space-y-0.5 max-h-96 overflow-y-auto">
-            <Link
-              to="/products"
-              className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
-            >
-              All Products
-            </Link>
-            {categories.map(cat => (
-              <Link
-                key={cat.id}
-                to={'/category/' + cat.slug}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-              >
-                {cat.icon && <span style={{fontSize:'16px'}}>{cat.icon}</span>}
-                {cat.name}
+          {/* Mobile auth links */}
+          {!isLoggedIn && (
+            <div className="flex gap-3 pt-3 border-t border-gray-100">
+              <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium">
+                Sign In
               </Link>
-            ))}
-          </nav>
+              <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-medium">
+                Register
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>
