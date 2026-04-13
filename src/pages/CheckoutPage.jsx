@@ -75,9 +75,7 @@ export default function CheckoutPage() {
 
   async function placeOrder() {
     setSaving(true)
-    const loadingToast = toast.loading(
-      method === 'mpesa' ? 'Creating order...' : 'Placing your order...'
-    )
+    const loadingToast = toast.loading('Creating order...')
 
     try {
       // Step 1 — Create order
@@ -130,29 +128,53 @@ export default function CheckoutPage() {
         toast.dismiss(loadingToast)
         const stkToast = toast.loading('Sending M-Pesa request to ' + address.phone + '...')
 
-        const { data: stkData, error: stkError } = await supabase.functions.invoke('mpesa-stk-push', {
-          body: {
-            phone:   address.phone,
-            amount:  total,
-            orderId: order.id,
-          },
-        })
+        try {
+          // Get auth session for the function call
+          const { data: { session } } = await supabase.auth.getSession()
 
-        toast.dismiss(stkToast)
-
-        if (stkError || stkData?.errorCode) {
-          toast.error('M-Pesa request failed. Please try again or use another payment method.')
-          setSaving(false)
-          return
-        }
-
-        if (stkData?.ResponseCode === '0') {
-          toast.success(
-            'M-Pesa prompt sent to ' + address.phone + '! Enter your PIN to complete payment.',
-            { duration: 8000, icon: '📱' }
+          const stkResponse = await fetch(
+            import.meta.env.VITE_SUPABASE_URL + '/functions/v1/mpesa-stk-push',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type':  'application/json',
+                'Authorization': 'Bearer ' + (session?.access_token || ''),
+                'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify({
+                phone:   address.phone,
+                amount:  total,
+                orderId: order.id,
+              }),
+            }
           )
-        } else {
-          toast.error(stkData?.ResponseDescription || 'M-Pesa request failed')
+
+          const stkData = await stkResponse.json()
+          console.log('STK Push response:', stkData)
+          toast.dismiss(stkToast)
+
+          if (!stkResponse.ok || stkData.error) {
+            console.error('STK error:', stkData)
+            toast.error('M-Pesa request failed: ' + (stkData.error || stkData.errorMessage || 'Unknown error'))
+            setSaving(false)
+            return
+          }
+
+          if (stkData.ResponseCode === '0') {
+            toast.success(
+              'M-Pesa prompt sent to ' + address.phone + '! Enter your PIN to complete payment.',
+              { duration: 8000, icon: '📱' }
+            )
+          } else {
+            toast.error(stkData.ResponseDescription || stkData.errorMessage || 'M-Pesa request failed')
+            setSaving(false)
+            return
+          }
+
+        } catch (fetchErr) {
+          toast.dismiss(stkToast)
+          console.error('Fetch error:', fetchErr)
+          toast.error('Could not reach M-Pesa service. Please try again.')
           setSaving(false)
           return
         }
