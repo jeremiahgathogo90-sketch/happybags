@@ -81,26 +81,32 @@ export default function HomePage() {
           .from('shipping_settings').select('value').eq('key', 'store_name').maybeSingle()
         if (mounted && nameData) setStoreName(String(nameData.value).replace(/^"|"$/g, ''))
 
-        // Featured — limit 10 (2 rows x 5 desktop)
+        // Featured — 4 items = 2 rows on mobile (2 cols x 2 rows)
         const { data: featuredData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).eq('is_featured', true)
-          .order('created_at', { ascending: false }).limit(10)
+          .eq('is_active', true)
+          .eq('is_featured', true)
+          .order('created_at', { ascending: false })
+          .limit(4)
         if (mounted) { setFeatured(featuredData ?? []); setLoadingFeatured(false) }
 
-        // Newest — limit 10
+        // Newest — 4 items = 2 rows on mobile
         const { data: newestData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).order('created_at', { ascending: false }).limit(10)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(4)
         if (mounted) { setNewest(newestData ?? []); setLoadingNewest(false) }
 
-        // Popular — limit 10
+        // Popular — 4 items = 2 rows on mobile
         const { data: popularData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).order('sold_count', { ascending: false }).limit(10)
+          .eq('is_active', true)
+          .order('sold_count', { ascending: false })
+          .limit(4)
         if (mounted) setPopular(popularData ?? [])
 
         // Flash sale
@@ -109,13 +115,15 @@ export default function HomePage() {
           .from('flash_sales').select('*').eq('is_active', true)
           .lte('starts_at', now).gte('ends_at', now)
           .order('starts_at', { ascending: false }).limit(1).maybeSingle()
+
         if (mounted) {
           if (saleData) {
             setFlashSale(saleData)
             const { data: itemsData } = await supabase
               .from('flash_sale_items')
               .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
-              .eq('flash_sale_id', saleData.id).limit(10)
+              .eq('flash_sale_id', saleData.id)
+              .limit(4)
             if (mounted) setFlashItems(itemsData ?? [])
           }
           setLoadingFlash(false)
@@ -146,7 +154,7 @@ export default function HomePage() {
   return (
     <main>
 
-      {/* Banner */}
+      {/* Banner — only shows when admin adds one */}
       {banners.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 pt-5">
           <div
@@ -190,15 +198,25 @@ export default function HomePage() {
 
             {banners.length > 1 && (
               <>
-                <button onClick={() => setBannerIdx(i => (i - 1 + banners.length) % banners.length)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center">
+                <button
+                  onClick={() => setBannerIdx(i => (i - 1 + banners.length) % banners.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center"
+                >
                   <ChevronLeft size={18} />
                 </button>
-                <button onClick={() => setBannerIdx(i => (i + 1) % banners.length)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center">
+                <button
+                  onClick={() => setBannerIdx(i => (i + 1) % banners.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center"
+                >
                   <ChevronRight size={18} />
                 </button>
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
                   {banners.map((_, i) => (
-                    <button key={i} onClick={() => setBannerIdx(i)} className={['rounded-full transition-all', i === bannerIdx ? 'bg-white w-5 h-2' : 'bg-white/50 w-2 h-2'].join(' ')} />
+                    <button
+                      key={i}
+                      onClick={() => setBannerIdx(i)}
+                      className={['rounded-full transition-all', i === bannerIdx ? 'bg-white w-5 h-2' : 'bg-white/50 w-2 h-2'].join(' ')}
+                    />
                   ))}
                 </div>
               </>
