@@ -18,7 +18,7 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #93c5fd; }
 
-/* Product grid — 2 cols mobile, scales up on larger screens */
+/* Product grid — 2 cols mobile, 3 tablet, 5 desktop */
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -34,19 +34,12 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (min-width: 1024px) {
   .product-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
-
-@media (min-width: 1280px) {
-  .product-grid {
     grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
 }
 
-/* Category grid */
+/* Category grid — 3 cols mobile, scales up */
 .category-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

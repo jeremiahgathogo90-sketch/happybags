@@ -81,35 +81,35 @@ export default function HomePage() {
           .from('shipping_settings').select('value').eq('key', 'store_name').maybeSingle()
         if (mounted && nameData) setStoreName(String(nameData.value).replace(/^"|"$/g, ''))
 
-        // Featured — 4 items = 2 rows on mobile (2 cols x 2 rows)
+        // Featured — 10 items (2 rows x 5 cols desktop, 2 rows x 2 cols mobile)
         const { data: featuredData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
           .eq('is_active', true)
           .eq('is_featured', true)
           .order('created_at', { ascending: false })
-          .limit(4)
+          .limit(10)
         if (mounted) { setFeatured(featuredData ?? []); setLoadingFeatured(false) }
 
-        // Newest — 4 items = 2 rows on mobile
+        // Newest — 10 items
         const { data: newestData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
           .eq('is_active', true)
           .order('created_at', { ascending: false })
-          .limit(4)
+          .limit(10)
         if (mounted) { setNewest(newestData ?? []); setLoadingNewest(false) }
 
-        // Popular — 4 items = 2 rows on mobile
+        // Popular — 10 items
         const { data: popularData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
           .eq('is_active', true)
           .order('sold_count', { ascending: false })
-          .limit(4)
+          .limit(10)
         if (mounted) setPopular(popularData ?? [])
 
-        // Flash sale
+        // Flash sale — 10 items
         const now = new Date().toISOString()
         const { data: saleData } = await supabase
           .from('flash_sales').select('*').eq('is_active', true)
@@ -123,7 +123,7 @@ export default function HomePage() {
               .from('flash_sale_items')
               .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
               .eq('flash_sale_id', saleData.id)
-              .limit(4)
+              .limit(10)
             if (mounted) setFlashItems(itemsData ?? [])
           }
           setLoadingFlash(false)
@@ -154,7 +154,7 @@ export default function HomePage() {
   return (
     <main>
 
-      {/* Banner — only shows when admin adds one */}
+      {/* Banner */}
       {banners.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 pt-5">
           <div
