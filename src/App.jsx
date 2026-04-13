@@ -16,8 +16,9 @@ import OrderConfirmPage  from '@/pages/OrderConfirmPage'
 import OrdersPage        from '@/pages/OrdersPage'
 import ProfilePage       from '@/pages/ProfilePage'
 
-import LoginPage    from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
+import LoginPage     from '@/pages/auth/LoginPage'
+import RegisterPage  from '@/pages/auth/RegisterPage'
+import AuthCallback  from '@/pages/auth/AuthCallback'
 
 import AdminLogin      from '@/pages/admin/AdminLogin'
 import AdminLayout     from '@/pages/admin/AdminLayout'
@@ -31,28 +32,29 @@ import AdminBanners    from '@/pages/admin/AdminBanners'
 import AdminShipping   from '@/pages/admin/AdminShipping'
 import AdminSettings   from '@/pages/admin/AdminSettings'
 
-function ProtectedRoute({ children }) {
-  const { isLoggedIn, loading } = useAuth()
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div style={{ width: 32, height: 32, border: '4px solid #2563eb', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
+}
+
+function ProtectedRoute({ children }) {
+  const { isLoggedIn, loading } = useAuth()
+  if (loading) return <Spinner />
   return isLoggedIn ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
   const { isAdmin, isLoggedIn, loading } = useAuth()
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <Spinner />
   if (!isLoggedIn) return <Navigate to="/admin/login" replace />
   if (!isAdmin) return (
-    <div className="flex items-center justify-center min-h-screen flex-col gap-3">
-      <p className="text-gray-600 font-medium">You do not have admin access.</p>
-      <a href="/" className="text-blue-600 underline text-sm">Go to store</a>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', gap: 12 }}>
+      <p style={{ color: '#64748b', fontWeight: 500 }}>You do not have admin access.</p>
+      <a href="/" style={{ color: '#2563eb', fontSize: 14 }}>Go to store</a>
     </div>
   )
   return children
@@ -69,8 +71,9 @@ function AppRoutes() {
       <Route path="/search"         element={<><Navbar /><ProductsPage /><Footer /></>} />
 
       {/* Auth */}
-      <Route path="/login"    element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login"         element={<LoginPage />} />
+      <Route path="/register"      element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       {/* Protected customer routes */}
       <Route path="/cart"                element={<ProtectedRoute><Navbar /><CartPage /><Footer /></ProtectedRoute>} />
@@ -80,22 +83,23 @@ function AppRoutes() {
       <Route path="/orders"              element={<ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute>} />
       <Route path="/profile"             element={<ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute>} />
 
-      {/* Admin login - separate from customer login */}
+      {/* Admin login */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
       {/* Admin panel */}
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-        <Route index                element={<AdminDashboard />} />
-        <Route path="products"      element={<AdminProducts />} />
-        <Route path="orders"        element={<AdminOrders />} />
-        <Route path="users"         element={<AdminUsers />} />
-        <Route path="categories"    element={<AdminCategories />} />
-        <Route path="flash-sales"   element={<AdminFlashSales />} />
-        <Route path="banners"       element={<AdminBanners />} />
-        <Route path="shipping"      element={<AdminShipping />} />
-        <Route path="settings"      element={<AdminSettings />} />
+        <Route index              element={<AdminDashboard />} />
+        <Route path="products"    element={<AdminProducts />} />
+        <Route path="orders"      element={<AdminOrders />} />
+        <Route path="users"       element={<AdminUsers />} />
+        <Route path="categories"  element={<AdminCategories />} />
+        <Route path="flash-sales" element={<AdminFlashSales />} />
+        <Route path="banners"     element={<AdminBanners />} />
+        <Route path="shipping"    element={<AdminShipping />} />
+        <Route path="settings"    element={<AdminSettings />} />
       </Route>
 
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
