@@ -45,9 +45,12 @@ export default function CheckoutPage() {
       if (data) {
         let thresh = 2000, defFee = 200, rates = {}
         data.forEach(row => {
-          if (row.key === 'free_delivery_threshold') thresh = Number(row.value)
-          if (row.key === 'default_delivery_fee')    defFee = Number(row.value)
-          if (row.key === 'county_rates')            rates  = typeof row.value === 'string' ? JSON.parse(row.value) : row.value
+          const val = String(row.value).replace(/^"|"$/g, '')
+          if (row.key === 'free_delivery_threshold') thresh = Number(val)
+          if (row.key === 'default_delivery_fee')    defFee = Number(val)
+          if (row.key === 'county_rates') {
+            try { rates = typeof row.value === 'string' ? JSON.parse(row.value) : row.value } catch {}
+          }
         })
         setThreshold(thresh)
         setDefaultFee(defFee)
@@ -72,14 +75,12 @@ export default function CheckoutPage() {
 
   async function placeOrder() {
     setSaving(true)
-
-    // Show loading toast
     const loadingToast = toast.loading(
-      method === 'mpesa' ? 'Sending M-Pesa request...' : 'Placing your order...'
+      method === 'mpesa' ? 'Creating order...' : 'Placing your order...'
     )
 
     try {
-      // Create order
+      // Step 1 — Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -99,12 +100,12 @@ export default function CheckoutPage() {
 
       if (orderError) {
         toast.dismiss(loadingToast)
-        toast.error('Failed to place order: ' + orderError.message, { duration: 5000 })
+        toast.error('Failed to place order: ' + orderError.message)
         setSaving(false)
         return
       }
 
-      // Insert order items
+      // Step 2 — Insert order items
       const orderItems = items.map(item => ({
         order_id:      order.id,
         product_id:    item.product_id,
@@ -119,29 +120,49 @@ export default function CheckoutPage() {
 
       if (itemsError) {
         toast.dismiss(loadingToast)
-        toast.error('Order created but items failed to save. Contact support.', { duration: 6000 })
+        toast.error('Order created but items failed. Contact support.')
         setSaving(false)
         return
       }
 
-      // All good — dismiss loading and show success
-      toast.dismiss(loadingToast)
-
+      // Step 3 — M-Pesa STK Push
       if (method === 'mpesa') {
-        toast.success(
-          'Order placed! M-Pesa request sent to ' + address.phone + '. Enter your PIN to complete payment.',
-          { duration: 6000, icon: '📱' }
-        )
+        toast.dismiss(loadingToast)
+        const stkToast = toast.loading('Sending M-Pesa request to ' + address.phone + '...')
+
+        const { data: stkData, error: stkError } = await supabase.functions.invoke('mpesa-stk-push', {
+          body: {
+            phone:   address.phone,
+            amount:  total,
+            orderId: order.id,
+          },
+        })
+
+        toast.dismiss(stkToast)
+
+        if (stkError || stkData?.errorCode) {
+          toast.error('M-Pesa request failed. Please try again or use another payment method.')
+          setSaving(false)
+          return
+        }
+
+        if (stkData?.ResponseCode === '0') {
+          toast.success(
+            'M-Pesa prompt sent to ' + address.phone + '! Enter your PIN to complete payment.',
+            { duration: 8000, icon: '📱' }
+          )
+        } else {
+          toast.error(stkData?.ResponseDescription || 'M-Pesa request failed')
+          setSaving(false)
+          return
+        }
+
       } else if (method === 'cod') {
-        toast.success(
-          'Order placed successfully! Pay cash when your order arrives.',
-          { duration: 5000, icon: '✅' }
-        )
+        toast.dismiss(loadingToast)
+        toast.success('Order placed! Pay cash on delivery.', { duration: 5000, icon: '✅' })
       } else {
-        toast.success(
-          'Order placed successfully!',
-          { duration: 5000, icon: '✅' }
-        )
+        toast.dismiss(loadingToast)
+        toast.success('Order placed successfully!', { duration: 5000, icon: '✅' })
       }
 
       await clearCart()
@@ -150,7 +171,7 @@ export default function CheckoutPage() {
 
     } catch (err) {
       toast.dismiss(loadingToast)
-      toast.error('Something went wrong. Please try again.', { duration: 5000 })
+      toast.error('Something went wrong: ' + err.message)
       setSaving(false)
     }
   }
@@ -251,9 +272,8 @@ export default function CheckoutPage() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { id: 'mpesa', label: 'M-Pesa',          sub: 'STK push to ' + (address.phone || 'your phone'), icon: Smartphone, iconColor: 'text-green-600', iconBg: 'bg-green-100', badge: 'Recommended' },
-                  { id: 'card',  label: 'Visa / Mastercard', sub: 'Secure card payment',    icon: Lock,       iconColor: 'text-blue-600',   iconBg: 'bg-blue-100' },
-                  { id: 'cod',   label: 'Pay on Delivery',  sub: 'Cash when order arrives', icon: MapPin,     iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
+                  { id: 'mpesa', label: 'M-Pesa', sub: 'STK push to ' + (address.phone || 'your phone'), icon: Smartphone, iconColor: 'text-green-600', iconBg: 'bg-green-100', badge: 'Recommended' },
+                  { id: 'cod',   label: 'Pay on Delivery', sub: 'Cash when order arrives', icon: MapPin, iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
                 ].map(({ id, label, sub, icon: Icon, iconColor, iconBg, badge }) => (
                   <label key={id} className={['flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all', method === id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'].join(' ')}>
                     <input type="radio" name="method" value={id} checked={method === id} onChange={() => setMethod(id)} className="text-blue-600" />
@@ -304,10 +324,20 @@ export default function CheckoutPage() {
 
               <div className="bg-gray-50 rounded-xl p-4 mb-5">
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1">Payment Method</p>
-                <p className="font-medium text-gray-800">
-                  {method === 'mpesa' ? 'M-Pesa (' + address.phone + ')' : method === 'cod' ? 'Pay on Delivery' : 'Card Payment'}
+                <p className="font-medium text-gray-800 flex items-center gap-2">
+                  {method === 'mpesa' ? (
+                    <><Smartphone size={16} className="text-green-600" /> M-Pesa ({address.phone})</>
+                  ) : (
+                    <><MapPin size={16} className="text-orange-600" /> Pay on Delivery</>
+                  )}
                 </p>
               </div>
+
+              {method === 'mpesa' && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-5 text-sm text-green-700">
+                  📱 You will receive an M-Pesa prompt on <strong>{address.phone}</strong>. Enter your PIN to complete payment.
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl text-sm font-medium hover:bg-gray-50">Back</button>
@@ -319,7 +349,7 @@ export default function CheckoutPage() {
                   {saving ? (
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
                   ) : (
-                    method === 'mpesa' ? 'Pay with M-Pesa' : 'Place Order'
+                    method === 'mpesa' ? '📱 Pay with M-Pesa' : 'Place Order'
                   )}
                 </button>
               </div>
@@ -327,7 +357,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Order summary sidebar */}
+        {/* Order summary */}
         <div className="lg:w-72 flex-shrink-0">
           <div className="bg-white rounded-xl border border-gray-100 p-5 sticky top-20">
             <h3 className="font-bold text-gray-900 mb-4">Order Summary</h3>
