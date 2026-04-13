@@ -16,7 +16,8 @@ export default function ProductCard({ product, flashPrice = null }) {
   const originalPrice = flashPrice ? product.price : product.original_price
   const discount      = discountPct(originalPrice, displayPrice)
   const outOfStock    = product.stock_qty === 0
-  const thumbnail     = product.thumbnail || product.images?.[0] || null
+  const raw = product.thumbnail || product.images?.[0] || null
+  const thumbnail = raw && raw.includes('supabase') ? raw + '?width=400&quality=70' : raw
 
   function handleAddToCart(e) {
     e.preventDefault()

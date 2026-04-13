@@ -10,6 +10,27 @@ const EMPTY = {
   is_active: true, is_featured: false, tags: ''
 }
 
+async function compressImage(file, maxWidth = 800, quality = 0.75) {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas')
+    const img    = new Image()
+    img.onload = () => {
+      let w = img.width
+      let h = img.height
+      if (w > maxWidth) {
+        h = Math.round((h * maxWidth) / w)
+        w = maxWidth
+      }
+      canvas.width  = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, w, h)
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function AdminProducts() {
   const [products, setProducts]     = useState([])
   const [categories, setCategories] = useState([])
@@ -20,6 +41,7 @@ export default function AdminProducts() {
   const [form, setForm]             = useState(EMPTY)
   const [saving, setSaving]         = useState(false)
   const [uploading, setUploading]   = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [images, setImages]         = useState([])
   const fileRef = useRef()
 
@@ -50,7 +72,6 @@ export default function AdminProducts() {
   }
 
   async function openEdit(productId) {
-    // Fetch FULL product data before opening form
     const { data: p, error } = await supabase
       .from('products')
       .select('*')
@@ -91,22 +112,37 @@ export default function AdminProducts() {
     if (!files.length) return
     setUploading(true)
     const urls = []
-    for (const file of files) {
-      const ext  = file.name.split('.').pop()
-      const path = 'products/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      setUploadProgress('Compressing ' + (i + 1) + '/' + files.length + '...')
+
+      // Compress image before upload
+      const compressed = await compressImage(file, 800, 0.75)
+      const path = 'products/' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.jpg'
+
+      setUploadProgress('Uploading ' + (i + 1) + '/' + files.length + '...')
+
       const { error } = await supabase.storage
         .from('product-images')
-        .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+        .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' })
+
       if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(path)
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(path)
         urls.push(publicUrl)
       } else {
         toast.error('Upload failed: ' + error.message)
       }
     }
+
     setImages(prev => [...prev, ...urls])
-    if (urls.length) toast.success(urls.length + ' image(s) uploaded')
+    if (urls.length) toast.success(urls.length + ' image(s) uploaded and compressed!')
     setUploading(false)
+    setUploadProgress('')
+    // Clear input so same file can be re-uploaded
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function handleSubmit(e) {
@@ -137,11 +173,7 @@ export default function AdminProducts() {
       ? await supabase.from('products').update(payload).eq('id', editing)
       : await supabase.from('products').insert(payload)
 
-    if (error) {
-      toast.error(error.message)
-      setSaving(false)
-      return
-    }
+    if (error) { toast.error(error.message); setSaving(false); return }
 
     toast.success(editing ? 'Product updated!' : 'Product added!')
     setShowForm(false)
@@ -163,6 +195,14 @@ export default function AdminProducts() {
   async function toggleActive(p) {
     await supabase.from('products').update({ is_active: !p.is_active }).eq('id', p.id)
     setProducts(prev => prev.map(x => x.id === p.id ? { ...x, is_active: !x.is_active } : x))
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditing(null)
+    setForm(EMPTY)
+    setImages([])
+    setUploadProgress('')
   }
 
   return (
@@ -219,7 +259,7 @@ export default function AdminProducts() {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                         <img
-                          src={p.thumbnail || 'https://placehold.co/40x40?text=?'}
+                          src={p.thumbnail ? p.thumbnail + '?width=80&quality=60' : 'https://placehold.co/40x40?text=?'}
                           alt=""
                           className="w-full h-full object-contain p-1"
                           onError={e => { e.target.src = 'https://placehold.co/40x40?text=?' }}
@@ -271,7 +311,7 @@ export default function AdminProducts() {
           <div className="bg-white rounded-2xl w-full max-w-2xl my-8 shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h3 className="font-bold text-gray-900">{editing ? 'Edit Product' : 'Add New Product'}</h3>
-              <button onClick={() => { setShowForm(false); setEditing(null); setForm(EMPTY); setImages([]) }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={closeForm} className="text-gray-400 hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
@@ -342,11 +382,19 @@ export default function AdminProducts() {
 
               {/* Images */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Product Images
+                  <span className="text-xs text-gray-400 ml-2 font-normal">Auto-compressed to max 800px</span>
+                </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {images.map((url, i) => (
                     <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
-                      <img src={url} alt="" className="w-full h-full object-contain p-1" />
+                      <img
+                        src={url + '?width=80&quality=60'}
+                        alt=""
+                        className="w-full h-full object-contain p-1"
+                        onError={e => { e.target.src = url }}
+                      />
                       <button
                         type="button"
                         onClick={() => setImages(prev => prev.filter((_, j) => j !== i))}
@@ -360,14 +408,20 @@ export default function AdminProducts() {
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-xs gap-1"
+                    className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-xs gap-1 disabled:opacity-50"
                   >
                     <Upload size={16} />
                     {uploading ? '...' : 'Upload'}
                   </button>
                 </div>
+                {uploadProgress && (
+                  <div className="flex items-center gap-2 text-xs text-blue-600 mb-1">
+                    <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    {uploadProgress}
+                  </div>
+                )}
                 <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                <p className="text-xs text-gray-400">Upload JPG, PNG or WebP. First image becomes the main thumbnail.</p>
+                <p className="text-xs text-gray-400">Upload JPG, PNG or WebP. Images are automatically compressed. First image becomes the thumbnail.</p>
               </div>
 
               {/* Toggles */}
@@ -386,14 +440,14 @@ export default function AdminProducts() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setEditing(null); setForm(EMPTY); setImages([]) }}
+                  onClick={closeForm}
                   className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
                 >
                   {saving ? 'Saving...' : editing ? 'Update Product' : 'Add Product'}
