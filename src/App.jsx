@@ -16,9 +16,9 @@ import OrderConfirmPage  from '@/pages/OrderConfirmPage'
 import OrdersPage        from '@/pages/OrdersPage'
 import ProfilePage       from '@/pages/ProfilePage'
 
-import LoginPage     from '@/pages/auth/LoginPage'
-import RegisterPage  from '@/pages/auth/RegisterPage'
-import AuthCallback  from '@/pages/auth/AuthCallback'
+import LoginPage    from '@/pages/auth/LoginPage'
+import RegisterPage from '@/pages/auth/RegisterPage'
+import AuthCallback from '@/pages/auth/AuthCallback'
 
 import AdminLogin      from '@/pages/admin/AdminLogin'
 import AdminLayout     from '@/pages/admin/AdminLayout'
@@ -107,7 +107,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <CartProvider>
           <AppRoutes />

@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { timeRemaining, pad2 } from '@/lib/utils'
 import ProductCard from '@/components/product/ProductCard'
-import { useRealtime } from '@/hooks/useRealtime'
 
 function FlashTimer({ endsAt }) {
   const [t, setT] = useState(timeRemaining(endsAt))
@@ -55,103 +54,137 @@ export default function HomePage() {
   const [featured, setFeatured]     = useState([])
   const [newest, setNewest]         = useState([])
   const [popular, setPopular]       = useState([])
-  const [settings, setSettings]     = useState({})
+  const [storeName, setStoreName]   = useState('HappyBags')
+
   const [loadingFeatured, setLoadingFeatured] = useState(true)
   const [loadingNewest, setLoadingNewest]     = useState(true)
+  const [loadingPopular, setLoadingPopular]   = useState(true)
+  const [loadingFlash, setLoadingFlash]       = useState(true)
 
-  // ── Fetch functions ──────────────────────────────────────────
-  const fetchBanners = useCallback(async () => {
-    const { data } = await supabase.from('banners').select('*').eq('is_active', true).order('sort_order').limit(5)
-    setBanners(data ?? [])
-  }, [])
-
-  const fetchCategories = useCallback(async () => {
-    const { data } = await supabase.from('categories').select('id, name, slug, icon, image_url').eq('is_active', true).order('sort_order').limit(12)
-    setCategories(data ?? [])
-  }, [])
-
-  const fetchFlashSale = useCallback(async () => {
-    const now = new Date().toISOString()
-    const { data: sale } = await supabase
-      .from('flash_sales').select('*').eq('is_active', true)
-      .lte('starts_at', now).gte('ends_at', now)
-      .order('starts_at', { ascending: false }).limit(1).maybeSingle()
-    if (!sale) { setFlashSale(null); setFlashItems([]); return }
-    setFlashSale(sale)
-    const { data: items } = await supabase
-      .from('flash_sale_items')
-      .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
-      .eq('flash_sale_id', sale.id).limit(10)
-    setFlashItems(items ?? [])
-  }, [])
-
-  const fetchFeatured = useCallback(async () => {
-    setLoadingFeatured(true)
-    const { data } = await supabase.from('products')
-      .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-      .eq('is_active', true).eq('is_featured', true)
-      .order('created_at', { ascending: false }).limit(10)
-    setFeatured(data ?? [])
-    setLoadingFeatured(false)
-  }, [])
-
-  const fetchNewest = useCallback(async () => {
-    setLoadingNewest(true)
-    const { data } = await supabase.from('products')
-      .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-      .eq('is_active', true).order('created_at', { ascending: false }).limit(10)
-    setNewest(data ?? [])
-    setLoadingNewest(false)
-  }, [])
-
-  const fetchPopular = useCallback(async () => {
-    const { data } = await supabase.from('products')
-      .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-      .eq('is_active', true).order('sold_count', { ascending: false }).limit(10)
-    setPopular(data ?? [])
-  }, [])
-
-  const fetchSettings = useCallback(async () => {
-    const { data } = await supabase.from('shipping_settings').select('key, value')
-      .in('key', ['store_name', 'free_delivery_threshold'])
-    const s = {}
-    ;(data ?? []).forEach(r => { s[r.key] = String(r.value).replace(/^"|"$/g, '') })
-    setSettings(s)
-  }, [])
-
-  // ── Initial load ─────────────────────────────────────────────
   useEffect(() => {
-    fetchBanners()
-    fetchCategories()
-    fetchFlashSale()
-    fetchFeatured()
-    fetchNewest()
-    fetchPopular()
-    fetchSettings()
+    let mounted = true
+
+    async function loadAll() {
+      try {
+        // Banners
+        const { data: bannersData } = await supabase
+          .from('banners')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order')
+          .limit(5)
+        if (mounted) setBanners(bannersData ?? [])
+
+        // Categories
+        const { data: catsData } = await supabase
+          .from('categories')
+          .select('id, name, slug, icon, image_url')
+          .eq('is_active', true)
+          .order('sort_order')
+          .limit(12)
+        if (mounted) setCategories(catsData ?? [])
+
+        // Store settings
+        const { data: settingsData } = await supabase
+          .from('shipping_settings')
+          .select('key, value')
+          .eq('key', 'store_name')
+          .maybeSingle()
+        if (mounted && settingsData) {
+          setStoreName(String(settingsData.value).replace(/^"|"$/g, ''))
+        }
+
+        // Featured products
+        const { data: featuredData, error: featuredError } = await supabase
+          .from('products')
+          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
+          .eq('is_active', true)
+          .eq('is_featured', true)
+          .order('created_at', { ascending: false })
+          .limit(10)
+        if (mounted) {
+          if (featuredError) console.error('Featured error:', featuredError)
+          setFeatured(featuredData ?? [])
+          setLoadingFeatured(false)
+        }
+
+        // Newest
+        const { data: newestData, error: newestError } = await supabase
+          .from('products')
+          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(10)
+        if (mounted) {
+          if (newestError) console.error('Newest error:', newestError)
+          setNewest(newestData ?? [])
+          setLoadingNewest(false)
+        }
+
+        // Popular
+        const { data: popularData } = await supabase
+          .from('products')
+          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
+          .eq('is_active', true)
+          .order('sold_count', { ascending: false })
+          .limit(10)
+        if (mounted) {
+          setPopular(popularData ?? [])
+          setLoadingPopular(false)
+        }
+
+        // Flash sale
+        const now = new Date().toISOString()
+        const { data: saleData } = await supabase
+          .from('flash_sales')
+          .select('*')
+          .eq('is_active', true)
+          .lte('starts_at', now)
+          .gte('ends_at', now)
+          .order('starts_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (mounted) {
+          if (saleData) {
+            setFlashSale(saleData)
+            const { data: itemsData } = await supabase
+              .from('flash_sale_items')
+              .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
+              .eq('flash_sale_id', saleData.id)
+              .limit(10)
+            if (mounted) setFlashItems(itemsData ?? [])
+          }
+          setLoadingFlash(false)
+        }
+
+      } catch (err) {
+        console.error('HomePage load error:', err)
+        if (mounted) {
+          setLoadingFeatured(false)
+          setLoadingNewest(false)
+          setLoadingPopular(false)
+          setLoadingFlash(false)
+        }
+      }
+    }
+
+    loadAll()
+    return () => { mounted = false }
   }, [])
 
-  // ── Real-time subscriptions ───────────────────────────────────
-  useRealtime('products',    fetchFeatured)
-  useRealtime('products',    fetchNewest)
-  useRealtime('products',    fetchPopular)
-  useRealtime('categories',  fetchCategories)
-  useRealtime('banners',     fetchBanners)
-  useRealtime('flash_sales', fetchFlashSale)
-
-  // ── Banner auto-rotate ────────────────────────────────────────
+  // Banner auto-rotate
   useEffect(() => {
     if (banners.length <= 1) return
     const id = setInterval(() => setBannerIdx(i => (i + 1) % banners.length), 5000)
     return () => clearInterval(id)
   }, [banners])
 
-  const storeName    = settings.store_name || 'HappyBags'
-  const threshold    = settings.free_delivery_threshold || '2000'
   const activeBanner = banners[bannerIdx]
 
   return (
     <main>
-      {/* Banner — only shows when admin adds one */}
+      {/* Banner */}
       {banners.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 pt-5">
           <div className="relative overflow-hidden" style={{ borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', minHeight: '200px', background: '#1e40af' }}>
@@ -221,7 +254,7 @@ export default function HomePage() {
         )}
 
         {/* Flash Sale */}
-        {flashSale && (
+        {!loadingFlash && flashSale && (
           <section>
             <div className="bg-red-600 rounded-t-xl px-4 py-3 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
@@ -261,7 +294,7 @@ export default function HomePage() {
         </section>
 
         {/* Best Sellers */}
-        {popular.length > 0 && (
+        {!loadingPopular && popular.length > 0 && (
           <section>
             <SectionHeader title="Best Sellers" seeAllLink="/products?sort=popular" />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
@@ -276,7 +309,6 @@ export default function HomePage() {
           {loadingNewest ? <Spinner /> : newest.length === 0 ? (
             <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
               <p className="text-gray-400 text-sm">No products yet.</p>
-              <p className="text-gray-400 text-xs mt-1">Go to Admin then Products and add your first product.</p>
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px' }}>
