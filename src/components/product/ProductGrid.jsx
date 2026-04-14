@@ -1,30 +1,37 @@
 import { useState, useEffect } from 'react'
 
-export default function ProductGrid({ children, max = 10 }) {
-  const [cols, setCols] = useState(2)
+export default function ProductGrid({ children, mobileMax = 4 }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
 
   useEffect(() => {
-    function updateCols() {
-      const w = window.innerWidth
-      if (w >= 1280) setCols(5)
-      else if (w >= 1024) setCols(4)
-      else if (w >= 640) setCols(3)
-      else setCols(2)
-    }
-    updateCols()
-    window.addEventListener('resize', updateCols)
-    return () => window.removeEventListener('resize', updateCols)
+    function check() { setIsMobile(window.innerWidth < 640) }
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
-  const items = Array.isArray(children) ? children.slice(0, max) : children
+  // Convert children to array and filter nulls
+  const allItems = Array.isArray(children)
+    ? children.flat().filter(Boolean)
+    : children ? [children] : []
+
+  // On mobile limit to mobileMax, on desktop show all
+  const visibleItems = isMobile ? allItems.slice(0, mobileMax) : allItems
+
+  const cols = (() => {
+    const w = window.innerWidth
+    if (w >= 1280) return 5
+    if (w >= 1024) return 4
+    if (w >= 640)  return 3
+    return 2
+  })()
 
   return (
     <div style={{
       display: 'grid',
       gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      gap: cols === 2 ? '10px' : '14px',
+      gap: isMobile ? '10px' : '14px',
     }}>
-      {items}
+      {visibleItems}
     </div>
   )
 }
