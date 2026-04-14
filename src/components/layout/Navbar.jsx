@@ -222,6 +222,12 @@ export default function Navbar() {
             >
               All Products
             </Link>
+            <Link
+              to="/about"
+              className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+           >
+             About Us
+            </Link>
             {categories.map(cat => (
               <Link
                 key={cat.id}
