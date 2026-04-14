@@ -4,6 +4,7 @@ import { ChevronRight, ChevronLeft, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { timeRemaining, pad2 } from '@/lib/utils'
 import ProductCard from '@/components/product/ProductCard'
+import ProductGrid from '@/components/product/ProductGrid'
 
 function FlashTimer({ endsAt }) {
   const [t, setT] = useState(timeRemaining(endsAt))
@@ -65,51 +66,38 @@ export default function HomePage() {
 
     async function loadAll() {
       try {
-        // Banners
         const { data: bannersData } = await supabase
           .from('banners').select('*').eq('is_active', true).order('sort_order').limit(5)
         if (mounted) setBanners(bannersData ?? [])
 
-        // Categories
         const { data: catsData } = await supabase
           .from('categories').select('id, name, slug, icon, image_url')
           .eq('is_active', true).order('sort_order').limit(12)
         if (mounted) setCategories(catsData ?? [])
 
-        // Store name
         const { data: nameData } = await supabase
           .from('shipping_settings').select('value').eq('key', 'store_name').maybeSingle()
         if (mounted && nameData) setStoreName(String(nameData.value).replace(/^"|"$/g, ''))
 
-        // Featured — 10 items (2 rows x 5 cols desktop, 2 rows x 2 cols mobile)
         const { data: featuredData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true)
-          .eq('is_featured', true)
-          .order('created_at', { ascending: false })
-          .limit(10)
+          .eq('is_active', true).eq('is_featured', true)
+          .order('created_at', { ascending: false }).limit(10)
         if (mounted) { setFeatured(featuredData ?? []); setLoadingFeatured(false) }
 
-        // Newest — 10 items
         const { data: newestData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(10)
+          .eq('is_active', true).order('created_at', { ascending: false }).limit(10)
         if (mounted) { setNewest(newestData ?? []); setLoadingNewest(false) }
 
-        // Popular — 10 items
         const { data: popularData } = await supabase
           .from('products')
           .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true)
-          .order('sold_count', { ascending: false })
-          .limit(10)
+          .eq('is_active', true).order('sold_count', { ascending: false }).limit(10)
         if (mounted) setPopular(popularData ?? [])
 
-        // Flash sale — 10 items
         const now = new Date().toISOString()
         const { data: saleData } = await supabase
           .from('flash_sales').select('*').eq('is_active', true)
@@ -122,8 +110,7 @@ export default function HomePage() {
             const { data: itemsData } = await supabase
               .from('flash_sale_items')
               .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
-              .eq('flash_sale_id', saleData.id)
-              .limit(10)
+              .eq('flash_sale_id', saleData.id).limit(10)
             if (mounted) setFlashItems(itemsData ?? [])
           }
           setLoadingFlash(false)
@@ -153,20 +140,12 @@ export default function HomePage() {
 
   return (
     <main>
-
       {/* Banner */}
       {banners.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 pt-5">
-          <div
-            className="relative overflow-hidden"
-            style={{ borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', minHeight: '200px', background: '#1e40af' }}
-          >
+          <div className="relative overflow-hidden" style={{ borderRadius: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', minHeight: '200px', background: '#1e40af' }}>
             {activeBanner.image_url ? (
-              <img
-                src={activeBanner.image_url}
-                alt={activeBanner.title || 'Banner'}
-                style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block', borderRadius: '20px' }}
-              />
+              <img src={activeBanner.image_url} alt={activeBanner.title || 'Banner'} style={{ width: '100%', maxHeight: '420px', objectFit: 'cover', display: 'block', borderRadius: '20px' }} />
             ) : (
               <div className="px-8 py-16 text-white">
                 <h1 className="font-bold text-3xl md:text-5xl mb-4">{activeBanner.title}</h1>
@@ -178,12 +157,8 @@ export default function HomePage() {
                 )}
               </div>
             )}
-
             {activeBanner.image_url && (activeBanner.title || activeBanner.link_url) && (
-              <div
-                className="absolute inset-0 flex items-end"
-                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%)', borderRadius: '20px' }}
-              >
+              <div className="absolute inset-0 flex items-end" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%)', borderRadius: '20px' }}>
                 <div className="px-8 py-8 w-full">
                   {activeBanner.title && <h1 className="font-bold text-2xl md:text-4xl text-white mb-2 max-w-lg">{activeBanner.title}</h1>}
                   {activeBanner.subtitle && <p className="text-white/90 mb-4 max-w-md">{activeBanner.subtitle}</p>}
@@ -195,28 +170,17 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-
             {banners.length > 1 && (
               <>
-                <button
-                  onClick={() => setBannerIdx(i => (i - 1 + banners.length) % banners.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center"
-                >
+                <button onClick={() => setBannerIdx(i => (i - 1 + banners.length) % banners.length)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center">
                   <ChevronLeft size={18} />
                 </button>
-                <button
-                  onClick={() => setBannerIdx(i => (i + 1) % banners.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center"
-                >
+                <button onClick={() => setBannerIdx(i => (i + 1) % banners.length)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center">
                   <ChevronRight size={18} />
                 </button>
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
                   {banners.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setBannerIdx(i)}
-                      className={['rounded-full transition-all', i === bannerIdx ? 'bg-white w-5 h-2' : 'bg-white/50 w-2 h-2'].join(' ')}
-                    />
+                    <button key={i} onClick={() => setBannerIdx(i)} className={['rounded-full transition-all', i === bannerIdx ? 'bg-white w-5 h-2' : 'bg-white/50 w-2 h-2'].join(' ')} />
                   ))}
                 </div>
               </>
@@ -231,13 +195,9 @@ export default function HomePage() {
         {categories.length > 0 && (
           <section>
             <SectionHeader title="Shop by Category" seeAllLink="/products" />
-            <div className="category-grid">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
               {categories.map(cat => (
-                <Link
-                  key={cat.id}
-                  to={'/category/' + cat.slug}
-                  className="flex flex-col items-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all group text-center"
-                >
+                <Link key={cat.id} to={'/category/' + cat.slug} className="flex flex-col items-center gap-2 p-3 bg-white rounded-xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all group text-center">
                   {cat.image_url
                     ? <img src={cat.image_url} alt={cat.name} className="w-8 h-8 object-contain" />
                     : <span style={{ fontSize: '24px' }}>{cat.icon || '🛍️'}</span>
@@ -266,17 +226,15 @@ export default function HomePage() {
               {flashItems.length === 0 ? (
                 <p className="text-center text-gray-500 py-6 text-sm">No products in this flash sale yet.</p>
               ) : (
-                <div className="product-grid">
-                  {flashItems.map(item => item.product && (
-                    <ProductCard key={item.id} product={item.product} flashPrice={item.sale_price} />
-                  ))}
-                </div>
+                <ProductGrid>
+                  {flashItems.map(item => item.product && <ProductCard key={item.id} product={item.product} flashPrice={item.sale_price} />)}
+                </ProductGrid>
               )}
             </div>
           </section>
         )}
 
-        {/* Featured Products */}
+        {/* Featured */}
         <section>
           <SectionHeader title="Featured Products" seeAllLink="/products?featured=true" />
           {loadingFeatured ? <Spinner /> : featured.length === 0 ? (
@@ -285,9 +243,9 @@ export default function HomePage() {
               <p className="text-gray-400 text-xs mt-1">Go to Admin then Products and mark products as Featured.</p>
             </div>
           ) : (
-            <div className="product-grid">
+            <ProductGrid>
               {featured.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            </ProductGrid>
           )}
         </section>
 
@@ -295,9 +253,9 @@ export default function HomePage() {
         {popular.length > 0 && (
           <section>
             <SectionHeader title="Best Sellers" seeAllLink="/products?sort=popular" />
-            <div className="product-grid">
+            <ProductGrid>
               {popular.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            </ProductGrid>
           </section>
         )}
 
@@ -309,17 +267,14 @@ export default function HomePage() {
               <p className="text-gray-400 text-sm">No products yet.</p>
             </div>
           ) : (
-            <div className="product-grid">
+            <ProductGrid>
               {newest.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            </ProductGrid>
           )}
         </section>
 
         {/* CTA */}
-        <section
-          className="p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white"
-          style={{ borderRadius: '20px', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', boxShadow: '0 8px 32px rgba(30,58,138,0.25)' }}
-        >
+        <section className="p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-white" style={{ borderRadius: '20px', background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)', boxShadow: '0 8px 32px rgba(30,58,138,0.25)' }}>
           <div>
             <h3 className="font-bold text-2xl mb-2">Get the {storeName} App</h3>
             <p className="text-blue-300 text-sm">Shop faster. Track orders. Exclusive app-only deals.</p>
