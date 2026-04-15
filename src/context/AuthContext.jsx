@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const AuthContext = createContext(null)
@@ -19,22 +19,31 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
+    // Timeout so loading never hangs forever on Chrome
+    const timeout = setTimeout(() => setLoading(false), 3000)
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout)
       setUser(session?.user ?? null)
       if (session?.user) await fetchProfile(session.user.id)
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      clearTimeout(timeout)
       setUser(session?.user ?? null)
       if (session?.user) {
         await fetchProfile(session.user.id)
       } else {
         setProfile(null)
       }
+      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const isAdmin    = profile?.role === 'admin' || profile?.role === 'super_admin'
