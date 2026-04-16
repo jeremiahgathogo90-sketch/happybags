@@ -66,7 +66,7 @@ function AppRoutes() {
   return (
     <>
       <Routes>
-        {/* Public */}
+        {/* Public — no login required */}
         <Route path="/"               element={<><Navbar /><HomePage /><Footer /></>} />
         <Route path="/products"       element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/products/:slug" element={<><Navbar /><ProductDetailPage /><Footer /></>} />
@@ -74,18 +74,22 @@ function AppRoutes() {
         <Route path="/search"         element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/about"          element={<><Navbar /><AboutPage /><Footer /></>} />
 
+        {/* Cart & Checkout — no login required (guest checkout) */}
+        <Route path="/cart"     element={<><Navbar /><CartPage /><Footer /></>} />
+        <Route path="/wishlist" element={<><Navbar /><WishlistPage /><Footer /></>} />
+        <Route path="/checkout" element={<><Navbar /><CheckoutPage /></>} />
+
+        {/* Order confirm — accessible to guests too */}
+        <Route path="/order-confirmed/:id" element={<><Navbar /><OrderConfirmPage /><Footer /></>} />
+
         {/* Auth */}
         <Route path="/login"         element={<LoginPage />} />
         <Route path="/register"      element={<RegisterPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Protected customer routes */}
-        <Route path="/cart"                element={<ProtectedRoute><Navbar /><CartPage /><Footer /></ProtectedRoute>} />
-        <Route path="/wishlist"            element={<ProtectedRoute><Navbar /><WishlistPage /><Footer /></ProtectedRoute>} />
-        <Route path="/checkout"            element={<ProtectedRoute><Navbar /><CheckoutPage /></ProtectedRoute>} />
-        <Route path="/order-confirmed/:id" element={<ProtectedRoute><Navbar /><OrderConfirmPage /><Footer /></ProtectedRoute>} />
-        <Route path="/orders"              element={<ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute>} />
-        <Route path="/profile"             element={<ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute>} />
+        {/* Protected — login required */}
+        <Route path="/orders"  element={<ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute>} />
 
         {/* Admin login */}
         <Route path="/admin/login" element={<AdminLogin />} />
@@ -107,10 +111,10 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* WhatsApp float button — shows on all pages except admin */}
+      {/* WhatsApp float button */}
       <WhatsAppButton
         phone="254716670629"
-        message="Hello HappyBags! I need help with my order."
+        message="Hello Happy Bags Merchant! I need help with my order."
       />
     </>
   )

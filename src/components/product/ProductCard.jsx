@@ -1,14 +1,11 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ShoppingCart, Star } from 'lucide-react'
 import { formatKES, discountPct, truncate } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
-import { useAuth } from '@/context/AuthContext'
 
 export default function ProductCard({ product, flashPrice = null }) {
   const { addToCart }  = useCart()
-  const { isLoggedIn } = useAuth()
-  const navigate       = useNavigate()
   const [imgLoaded, setImgLoaded] = useState(false)
   const [imgError, setImgError]   = useState(false)
 
@@ -22,7 +19,6 @@ export default function ProductCard({ product, flashPrice = null }) {
   function handleAddToCart(e) {
     e.preventDefault()
     e.stopPropagation()
-    if (!isLoggedIn) { navigate('/login'); return }
     addToCart(product.id)
   }
 
@@ -190,3 +186,4 @@ export default function ProductCard({ product, flashPrice = null }) {
     </div>
   )
 }
+

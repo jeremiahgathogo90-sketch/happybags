@@ -1,10 +1,10 @@
 ﻿import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import { formatKES } from '@/lib/utils'
-import { MapPin, Phone, ChevronRight, Lock, Smartphone, Truck, CheckCircle } from 'lucide-react'
+import { MapPin, Phone, ChevronRight, Lock, Smartphone, Truck, CheckCircle, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const COUNTIES = [
@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState({
     full_name: profile?.full_name || '',
     phone:     profile?.phone || '',
+    email:     user?.email || '',
     county:    '',
     town:      '',
     street:    '',
@@ -78,11 +79,11 @@ export default function CheckoutPage() {
     const loadingToast = toast.loading('Creating order...')
 
     try {
-      // Step 1 — Create order
+      // Create order — works for both guests and logged in users
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id:          user.id,
+          user_id:          user?.id || null,
           status:           'pending',
           payment_status:   'unpaid',
           payment_method:   method,
@@ -92,6 +93,7 @@ export default function CheckoutPage() {
           total,
           phone:            address.phone,
           delivery_address: address,
+          guest_email:      !user ? address.email : null,
         })
         .select()
         .single()
@@ -103,7 +105,7 @@ export default function CheckoutPage() {
         return
       }
 
-      // Step 2 — Insert order items
+      // Insert order items
       const orderItems = items.map(item => ({
         order_id:      order.id,
         product_id:    item.product_id,
@@ -123,13 +125,12 @@ export default function CheckoutPage() {
         return
       }
 
-      // Step 3 — M-Pesa STK Push
+      // M-Pesa STK Push
       if (method === 'mpesa') {
         toast.dismiss(loadingToast)
         const stkToast = toast.loading('Sending M-Pesa request to ' + address.phone + '...')
 
         try {
-          // Get auth session for the function call
           const { data: { session } } = await supabase.auth.getSession()
 
           const stkResponse = await fetch(
@@ -138,53 +139,40 @@ export default function CheckoutPage() {
               method: 'POST',
               headers: {
                 'Content-Type':  'application/json',
-                'Authorization': 'Bearer ' + (session?.access_token || ''),
+                'Authorization': 'Bearer ' + (session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY),
                 'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
               },
-              body: JSON.stringify({
-                phone:   address.phone,
-                amount:  total,
-                orderId: order.id,
-              }),
+              body: JSON.stringify({ phone: address.phone, amount: total, orderId: order.id }),
             }
           )
 
           const stkData = await stkResponse.json()
-          console.log('STK Push response:', stkData)
           toast.dismiss(stkToast)
+          console.log('STK response:', stkData)
 
           if (!stkResponse.ok || stkData.error) {
-            console.error('STK error:', stkData)
-            toast.error('M-Pesa request failed: ' + (stkData.error || stkData.errorMessage || 'Unknown error'))
+            toast.error('M-Pesa request failed. Try again or use Pay on Delivery.')
             setSaving(false)
             return
           }
 
           if (stkData.ResponseCode === '0') {
-            toast.success(
-              'M-Pesa prompt sent to ' + address.phone + '! Enter your PIN to complete payment.',
-              { duration: 8000, icon: '📱' }
-            )
+            toast.success('M-Pesa prompt sent to ' + address.phone + '! Enter your PIN.', { duration: 8000, icon: '📱' })
           } else {
-            toast.error(stkData.ResponseDescription || stkData.errorMessage || 'M-Pesa request failed')
+            toast.error(stkData.ResponseDescription || 'M-Pesa request failed')
             setSaving(false)
             return
           }
-
         } catch (fetchErr) {
           toast.dismiss(stkToast)
-          console.error('Fetch error:', fetchErr)
-          toast.error('Could not reach M-Pesa service. Please try again.')
+          toast.error('Could not reach M-Pesa. Try Pay on Delivery.')
           setSaving(false)
           return
         }
 
-      } else if (method === 'cod') {
-        toast.dismiss(loadingToast)
-        toast.success('Order placed! Pay cash on delivery.', { duration: 5000, icon: '✅' })
       } else {
         toast.dismiss(loadingToast)
-        toast.success('Order placed successfully!', { duration: 5000, icon: '✅' })
+        toast.success('Order placed! Pay cash on delivery.', { duration: 5000, icon: '✅' })
       }
 
       await clearCart()
@@ -224,14 +212,30 @@ export default function CheckoutPage() {
           {/* Step 1 — Delivery */}
           {step === 1 && (
             <div className="bg-white rounded-xl border border-gray-100 p-6">
+
+              {/* Guest notice */}
+              {!user && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 flex items-start gap-3">
+                  <User size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium">Checking out as guest</p>
+                    <p className="text-xs text-blue-600 mt-0.5">
+                      <Link to="/login" className="underline font-medium">Sign in</Link> to track your orders and save your details for next time.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <h2 className="font-bold text-gray-900 mb-5 flex items-center gap-2">
                 <MapPin size={18} className="text-blue-600" /> Delivery Address
               </h2>
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                   <input value={address.full_name} onChange={setA('full_name')} required placeholder="Jane Wanjiru" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (M-Pesa) *</label>
                   <div className="relative">
@@ -239,6 +243,16 @@ export default function CheckoutPage() {
                     <input value={address.phone} onChange={setA('phone')} required placeholder="0712 345 678" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                 </div>
+
+                {/* Email for guests */}
+                {!user && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
+                    <input type="email" value={address.email} onChange={setA('email')} required placeholder="jane@example.com" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    <p className="text-xs text-gray-400 mt-1">Order confirmation will be sent here</p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">County *</label>
@@ -252,6 +266,7 @@ export default function CheckoutPage() {
                     <input value={address.town} onChange={setA('town')} required placeholder="e.g. Westlands" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Street / Building</label>
                   <input value={address.street} onChange={setA('street')} placeholder="e.g. Kimathi Street, ABC Building" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
@@ -274,6 +289,10 @@ export default function CheckoutPage() {
                   onClick={() => {
                     if (!address.full_name || !address.phone || !address.county || !address.town) {
                       toast.error('Please fill in all required fields')
+                      return
+                    }
+                    if (!user && !address.email) {
+                      toast.error('Please enter your email address')
                       return
                     }
                     setStep(2)
@@ -329,6 +348,7 @@ export default function CheckoutPage() {
                 <p className="font-medium text-gray-800">{address.full_name}</p>
                 <p className="text-sm text-gray-600">{address.street && address.street + ', '}{address.town}, {address.county}</p>
                 <p className="text-sm text-gray-600">{address.phone}</p>
+                {!user && address.email && <p className="text-sm text-gray-600">{address.email}</p>}
               </div>
 
               <div className="space-y-3 mb-4">
@@ -347,11 +367,10 @@ export default function CheckoutPage() {
               <div className="bg-gray-50 rounded-xl p-4 mb-5">
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1">Payment Method</p>
                 <p className="font-medium text-gray-800 flex items-center gap-2">
-                  {method === 'mpesa' ? (
-                    <><Smartphone size={16} className="text-green-600" /> M-Pesa ({address.phone})</>
-                  ) : (
-                    <><MapPin size={16} className="text-orange-600" /> Pay on Delivery</>
-                  )}
+                  {method === 'mpesa'
+                    ? <><Smartphone size={16} className="text-green-600" /> M-Pesa ({address.phone})</>
+                    : <><MapPin size={16} className="text-orange-600" /> Pay on Delivery</>
+                  }
                 </p>
               </div>
 
@@ -368,11 +387,10 @@ export default function CheckoutPage() {
                   disabled={saving}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  {saving ? (
-                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
-                  ) : (
-                    method === 'mpesa' ? '📱 Pay with M-Pesa' : 'Place Order'
-                  )}
+                  {saving
+                    ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
+                    : method === 'mpesa' ? '📱 Pay with M-Pesa' : 'Place Order'
+                  }
                 </button>
               </div>
             </div>
