@@ -74,7 +74,7 @@ export default function HomePage() {
 
         const { data: catsData } = await supabase
           .from('categories').select('id, name, slug, icon, image_url')
-          .eq('is_active', true).order('sort_order').limit(12)
+          .eq('is_active', true).order('sort_order').limit(8)
         if (mounted) setCategories(catsData ?? [])
 
         const { data: nameData } = await supabase
@@ -271,7 +271,7 @@ export default function HomePage() {
         {categories.length > 0 && (
           <section>
             <SectionHeader title="Shop by Category" seeAllLink="/products" />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
               {categories.map(cat => (
                 <Link key={cat.id} to={'/category/' + cat.slug} style={{ textDecoration: 'none' }}
                   className="flex flex-col items-center gap-1.5 p-2.5 bg-white rounded-xl border border-gray-100 hover:border-blue-400 hover:shadow-md transition-all group text-center">
