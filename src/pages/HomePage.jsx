@@ -33,7 +33,7 @@ function SectionHeader({ title, seeAllLink }) {
         <h2 className="font-bold text-lg text-gray-900">{title}</h2>
       </div>
       {seeAllLink && (
-        <Link to={seeAllLink} className="flex items-center gap-0.5 text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors">
+        <Link to={seeAllLink} className="flex items-center gap-0.5 text-sm text-blue-600 hover:text-blue-700 font-medium">
           See All <ChevronRight size={16} />
         </Link>
       )}
@@ -43,8 +43,8 @@ function SectionHeader({ title, seeAllLink }) {
 
 function Spinner() {
   return (
-    <div className="flex justify-center py-10">
-      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    <div className="flex justify-center py-8">
+      <div className="w-7 h-7 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 }
@@ -58,73 +58,67 @@ export default function HomePage() {
   const [featured, setFeatured]     = useState([])
   const [newest, setNewest]         = useState([])
   const [popular, setPopular]       = useState([])
-  const [storeName, setStoreName]   = useState('Happy Bags Merchant')
 
   const [loadingFeatured, setLoadingFeatured] = useState(true)
   const [loadingNewest, setLoadingNewest]     = useState(true)
-  const [loadingFlash, setLoadingFlash]       = useState(true)
 
   useEffect(() => {
     let mounted = true
+
     async function loadAll() {
       try {
-        const { data: bannersData } = await supabase
-          .from('banners').select('*').eq('is_active', true).order('sort_order').limit(5)
-        if (mounted) setBanners(bannersData ?? [])
+        // Load everything in parallel — much faster!
+        const [
+          { data: bannersData },
+          { data: catsData },
+          { data: featuredData },
+          { data: newestData },
+          { data: popularData },
+        ] = await Promise.all([
+          supabase.from('banners').select('*').eq('is_active', true).order('sort_order').limit(5),
+          supabase.from('categories').select('id, name, slug, icon, image_url').eq('is_active', true).order('sort_order').limit(8),
+          supabase.from('products').select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count').eq('is_active', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(10),
+          supabase.from('products').select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count').eq('is_active', true).order('created_at', { ascending: false }).limit(10),
+          supabase.from('products').select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count').eq('is_active', true).order('sold_count', { ascending: false }).limit(10),
+        ])
 
-        const { data: catsData } = await supabase
-          .from('categories').select('id, name, slug, icon, image_url')
-          .eq('is_active', true).order('sort_order').limit(8)
-        if (mounted) setCategories(catsData ?? [])
+        if (!mounted) return
 
-        const { data: nameData } = await supabase
-          .from('shipping_settings').select('value').eq('key', 'store_name').maybeSingle()
-        if (mounted && nameData) setStoreName(String(nameData.value).replace(/^"|"$/g, ''))
+        setBanners(bannersData ?? [])
+        setCategories(catsData ?? [])
+        setFeatured(featuredData ?? [])
+        setNewest(newestData ?? [])
+        setPopular(popularData ?? [])
+        setLoadingFeatured(false)
+        setLoadingNewest(false)
 
-        const { data: featuredData } = await supabase
-          .from('products')
-          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).eq('is_featured', true)
-          .order('created_at', { ascending: false }).limit(10)
-        if (mounted) { setFeatured(featuredData ?? []); setLoadingFeatured(false) }
-
-        const { data: newestData } = await supabase
-          .from('products')
-          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).order('created_at', { ascending: false }).limit(10)
-        if (mounted) { setNewest(newestData ?? []); setLoadingNewest(false) }
-
-        const { data: popularData } = await supabase
-          .from('products')
-          .select('id, name, slug, price, original_price, thumbnail, stock_qty, rating_avg, rating_count')
-          .eq('is_active', true).order('sold_count', { ascending: false }).limit(10)
-        if (mounted) setPopular(popularData ?? [])
-
+        // Load flash sale separately after main content
         const now = new Date().toISOString()
         const { data: saleData } = await supabase
           .from('flash_sales').select('*').eq('is_active', true)
           .lte('starts_at', now).gte('ends_at', now)
           .order('starts_at', { ascending: false }).limit(1).maybeSingle()
-        if (mounted) {
-          if (saleData) {
-            setFlashSale(saleData)
-            const { data: itemsData } = await supabase
-              .from('flash_sale_items')
-              .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
-              .eq('flash_sale_id', saleData.id).limit(10)
-            if (mounted) setFlashItems(itemsData ?? [])
-          }
-          setLoadingFlash(false)
+
+        if (!mounted) return
+
+        if (saleData) {
+          setFlashSale(saleData)
+          const { data: itemsData } = await supabase
+            .from('flash_sale_items')
+            .select('*, product:products(id, name, slug, price, original_price, thumbnail, images, stock_qty, rating_avg, rating_count)')
+            .eq('flash_sale_id', saleData.id).limit(10)
+          if (mounted) setFlashItems(itemsData ?? [])
         }
+
       } catch (err) {
         console.error('HomePage load error:', err)
         if (mounted) {
           setLoadingFeatured(false)
           setLoadingNewest(false)
-          setLoadingFlash(false)
         }
       }
     }
+
     loadAll()
     return () => { mounted = false }
   }, [])
@@ -142,45 +136,24 @@ export default function HomePage() {
 
   return (
     <main>
-
       {/* Announcement Bar */}
-      <div style={{
-        background: ROYAL_BLUE, color: '#fff',
-        padding: '7px 16px', fontSize: '12px', fontWeight: 500,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: '12px', flexWrap: 'wrap',
-      }}>
+      <div style={{ background: ROYAL_BLUE, color: '#fff', padding: '7px 16px', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <span>🛍️ Wholesale &amp; Retail — Quality Bags &amp; Packaging Solutions</span>
         <span style={{ opacity: 0.5 }}>|</span>
         <a href="tel:+254716670629" style={{ color: '#fde68a', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
           <Phone size={11} /> 0716 670 629
         </a>
-        <span style={{ opacity: 0.5 }}>|</span>
       </div>
 
-      {/* Hero — with uploaded banner OR default */}
+      {/* Hero — uploaded banner OR default */}
       {banners.length > 0 ? (
         <div style={{ position: 'relative', overflow: 'hidden', background: DARK_BLUE }}>
-          <img
-            src={activeBanner.image_url}
-            alt={activeBanner.title || 'Banner'}
-            style={{ width: '100%', maxHeight: '360px', objectFit: 'cover', display: 'block', opacity: 0.85 }}
-          />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(135deg, rgba(29,78,216,0.85) 0%, rgba(30,58,138,0.5) 60%, transparent 100%)',
-            display: 'flex', alignItems: 'center', padding: '0 48px',
-          }}>
+          <img src={activeBanner.image_url} alt={activeBanner.title || 'Banner'} style={{ width: '100%', maxHeight: '360px', objectFit: 'cover', display: 'block', opacity: 0.85 }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(29,78,216,0.85) 0%, rgba(30,58,138,0.5) 60%, transparent 100%)', display: 'flex', alignItems: 'center', padding: '0 48px' }}>
             <div style={{ maxWidth: '480px' }}>
-              <p style={{ color: GOLD, fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>
-                Nairobi's Premier Packaging Store
-              </p>
-              <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, lineHeight: 1.2, marginBottom: '14px' }}>
-                Quality Bags &amp;<br />Packaging Solutions
-              </h1>
-              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: 1.6, marginBottom: '22px' }}>
-                Non-woven bags, gift bags, khaki bags, straws, disposable cups &amp; plates.
-              </p>
+              <p style={{ color: GOLD, fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '10px' }}>Nairobi's Premier Packaging Store</p>
+              <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 800, lineHeight: 1.2, marginBottom: '14px' }}>Quality Bags &amp;<br />Packaging Solutions</h1>
+              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', lineHeight: 1.6, marginBottom: '22px' }}>Non-woven bags, gift bags, khaki bags, straws, disposable cups &amp; plates.</p>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <Link to="/products" style={{ background: GOLD, color: '#1e293b', fontWeight: 700, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <ShoppingBag size={15} /> Shop Now
@@ -203,32 +176,20 @@ export default function HomePage() {
           )}
         </div>
       ) : (
-        /* Compact default hero */
-        <div style={{
-          background: `linear-gradient(135deg, ${DARK_BLUE} 0%, ${ROYAL_BLUE} 60%, #3b82f6 100%)`,
-          padding: '20px 24px',
-          position: 'relative', overflow: 'hidden',
-        }}>
+        <div style={{ background: `linear-gradient(135deg, ${DARK_BLUE} 0%, ${ROYAL_BLUE} 60%, #3b82f6 100%)`, padding: '28px 24px', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-
           <div className="max-w-7xl mx-auto" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', position: 'relative' }}>
-
-            {/* Left content */}
             <div style={{ maxWidth: '480px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'rgba(245,158,11,0.2)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '20px', padding: '3px 10px', marginBottom: '12px' }}>
                 <Star size={11} color={GOLD} fill={GOLD} />
-                <span style={{ color: GOLD, fontSize: '10px', fontWeight: 600, letterSpacing: '1px' }}>BAGS PREMIER PACKAGING STORE</span>
+                <span style={{ color: GOLD, fontSize: '10px', fontWeight: 600, letterSpacing: '1px' }}>NAIROBI'S PREMIER PACKAGING STORE</span>
               </div>
-
               <h1 style={{ color: '#fff', fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: 800, lineHeight: 1.15, marginBottom: '10px' }}>
-                Quality Bags &amp;<br />
-                <span style={{ color: GOLD }}>Packaging Solutions</span>
+                Quality Bags &amp;<br /><span style={{ color: GOLD }}>Packaging Solutions</span>
               </h1>
-
               <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: '13px', lineHeight: 1.6, marginBottom: '20px' }}>
-                Non-woven bags, gift bags, D-cut bags, 3D bags, disposable cups &amp; plates. Wholesale &amp; retail across Kenya.
+                Non-woven bags, gift bags, khaki bags, straws, disposable cups &amp; plates. Wholesale &amp; retail across Kenya.
               </p>
-
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 <Link to="/products" style={{ background: GOLD, color: '#1e293b', fontWeight: 700, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(245,158,11,0.35)' }}>
                   <ShoppingBag size={15} /> Shop Now
@@ -237,11 +198,8 @@ export default function HomePage() {
                   <Phone size={14} /> Call Us
                 </a>
               </div>
-
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <a href="tel:+254716670629" style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Phone size={12} /> 0716 670 629
-                </a>
+                <a href="tel:+254716670629" style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}><Phone size={12} /> 0716 670 629</a>
               </div>
             </div>
           </div>
@@ -258,8 +216,7 @@ export default function HomePage() {
             { icon: Phone,   text: '0716 670 629' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1e293b', fontSize: '12px', fontWeight: 600 }}>
-              <Icon size={13} />
-              <span>{text}</span>
+              <Icon size={13} /><span>{text}</span>
             </div>
           ))}
         </div>
@@ -287,7 +244,7 @@ export default function HomePage() {
         )}
 
         {/* Flash Sale */}
-        {!loadingFlash && flashSale && (
+        {flashSale && (
           <section>
             <div style={{ background: '#dc2626', borderRadius: '12px 12px 0 0', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -338,25 +295,15 @@ export default function HomePage() {
         </section>
 
         {/* CTA */}
-        <section style={{
-          background: `linear-gradient(135deg, ${DARK_BLUE} 0%, ${ROYAL_BLUE} 100%)`,
-          borderRadius: '18px', padding: '32px 28px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: '20px',
-          boxShadow: '0 8px 28px rgba(29,78,216,0.22)',
-        }}>
+        <section style={{ background: `linear-gradient(135deg, ${DARK_BLUE} 0%, ${ROYAL_BLUE} 100%)`, borderRadius: '18px', padding: '32px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', boxShadow: '0 8px 28px rgba(29,78,216,0.22)' }}>
           <div>
             <h3 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>Happy Bags Merchant</h3>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginBottom: '4px' }}>📍 Nairobi CBD — Wholesale &amp; Retail</p>
             <p style={{ color: GOLD, fontSize: '13px', fontWeight: 600 }}>📞 0716 670 629 </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <Link to="/products" style={{ background: GOLD, color: '#1e293b', fontWeight: 700, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px' }}>
-              Shop Now 🛍️
-            </Link>
-            <a href="tel:+254716670629" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 600, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px' }}>
-              Call Us 📞
-            </a>
+            <Link to="/products" style={{ background: GOLD, color: '#1e293b', fontWeight: 700, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px' }}>Shop Now 🛍️</Link>
+            <a href="tel:+254716670629" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1.5px solid rgba(255,255,255,0.3)', fontWeight: 600, padding: '10px 24px', borderRadius: '10px', textDecoration: 'none', fontSize: '13px' }}>Call Us 📞</a>
           </div>
         </section>
 

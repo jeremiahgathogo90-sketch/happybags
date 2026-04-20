@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+﻿import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const AuthContext = createContext(null)
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
         console.log('Auth hard timeout fired')
         setLoading(false)
       }
-    }, 2000)
+    }, 5000)
 
     async function initAuth() {
       try {
