@@ -34,24 +34,25 @@ import AdminBanners    from '@/pages/admin/AdminBanners'
 import AdminShipping   from '@/pages/admin/AdminShipping'
 import AdminSettings   from '@/pages/admin/AdminSettings'
 
-function Spinner() {
+function MiniSpinner() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div style={{ width: 32, height: 32, border: '4px solid #2563eb', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+      <div style={{ width: 28, height: 28, border: '3px solid #2563eb', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
 
+// Only blocks navigation to protected pages — not the whole app
 function ProtectedRoute({ children }) {
   const { isLoggedIn, loading } = useAuth()
-  if (loading) return <Spinner />
+  if (loading) return <MiniSpinner />
   return isLoggedIn ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
   const { isAdmin, isLoggedIn, loading } = useAuth()
-  if (loading) return <Spinner />
+  if (loading) return <MiniSpinner />
   if (!isLoggedIn) return <Navigate to="/admin/login" replace />
   if (!isAdmin) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', flexDirection: 'column', gap: 12 }}>
@@ -66,7 +67,7 @@ function AppRoutes() {
   return (
     <>
       <Routes>
-        {/* Public — no login required */}
+        {/* Public — loads instantly, no auth check needed */}
         <Route path="/"               element={<><Navbar /><HomePage /><Footer /></>} />
         <Route path="/products"       element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/products/:slug" element={<><Navbar /><ProductDetailPage /><Footer /></>} />
@@ -74,12 +75,10 @@ function AppRoutes() {
         <Route path="/search"         element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/about"          element={<><Navbar /><AboutPage /><Footer /></>} />
 
-        {/* Cart & Checkout — no login required (guest checkout) */}
-        <Route path="/cart"     element={<><Navbar /><CartPage /><Footer /></>} />
-        <Route path="/wishlist" element={<><Navbar /><WishlistPage /><Footer /></>} />
-        <Route path="/checkout" element={<><Navbar /><CheckoutPage /></>} />
-
-        {/* Order confirm — accessible to guests too */}
+        {/* Guest accessible */}
+        <Route path="/cart"                element={<><Navbar /><CartPage /><Footer /></>} />
+        <Route path="/wishlist"            element={<><Navbar /><WishlistPage /><Footer /></>} />
+        <Route path="/checkout"            element={<><Navbar /><CheckoutPage /></>} />
         <Route path="/order-confirmed/:id" element={<><Navbar /><OrderConfirmPage /><Footer /></>} />
 
         {/* Auth */}
@@ -91,10 +90,8 @@ function AppRoutes() {
         <Route path="/orders"  element={<ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute>} />
 
-        {/* Admin login */}
+        {/* Admin */}
         <Route path="/admin/login" element={<AdminLogin />} />
-
-        {/* Admin panel */}
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index              element={<AdminDashboard />} />
           <Route path="products"    element={<AdminProducts />} />
@@ -107,11 +104,9 @@ function AppRoutes() {
           <Route path="settings"    element={<AdminSettings />} />
         </Route>
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* WhatsApp float button */}
       <WhatsAppButton
         phone="254716670629"
         message="Hello Happy Bags Merchant! I need help with my order."

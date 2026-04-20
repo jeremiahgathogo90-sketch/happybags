@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const AuthContext = createContext(null)
@@ -9,30 +9,51 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   const fetchProfile = useCallback(async (userId) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
-    setProfile(data)
-    return data
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle()
+      setProfile(data)
+      return data
+    } catch (err) {
+      console.error('fetchProfile error:', err)
+      return null
+    }
   }, [])
 
   useEffect(() => {
-    // Timeout so loading never hangs forever on Chrome
-    const timeout = setTimeout(() => setLoading(false), 3000)
+    let mounted = true
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      clearTimeout(timeout)
-      setUser(session?.user ?? null)
-      if (session?.user) await fetchProfile(session.user.id)
-      setLoading(false)
-    })
+    // Hard timeout — no matter what, stop loading after 2 seconds
+    const hardTimeout = setTimeout(() => {
+      if (mounted) {
+        console.log('Auth hard timeout fired')
+        setLoading(false)
+      }
+    }, 2000)
 
-    // Listen for auth changes — handles token refresh, sign in, sign out
+    async function initAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!mounted) return
+        setUser(session?.user ?? null)
+        if (session?.user) await fetchProfile(session.user.id)
+      } catch (err) {
+        console.error('initAuth error:', err)
+      } finally {
+        if (mounted) {
+          clearTimeout(hardTimeout)
+          setLoading(false)
+        }
+      }
+    }
+
+    initAuth()
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      clearTimeout(timeout)
+      if (!mounted) return
       console.log('Auth event:', event)
 
       if (event === 'SIGNED_OUT') {
@@ -43,7 +64,6 @@ export function AuthProvider({ children }) {
       }
 
       if (event === 'TOKEN_REFRESHED') {
-        // Token refreshed — update user but don't reload profile
         setUser(session?.user ?? null)
         setLoading(false)
         return
@@ -58,21 +78,20 @@ export function AuthProvider({ children }) {
       setLoading(false)
     })
 
-    // Auto refresh session every 50 minutes to prevent expiry
+    // Auto refresh session every 50 minutes
     const refreshInterval = setInterval(async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Session refresh error:', error)
-        return
+      if (!mounted) return
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) await supabase.auth.refreshSession()
+      } catch (err) {
+        console.error('Session refresh error:', err)
       }
-      if (session) {
-        await supabase.auth.refreshSession()
-        console.log('Session refreshed at', new Date().toLocaleTimeString())
-      }
-    }, 50 * 60 * 1000) // every 50 minutes
+    }, 50 * 60 * 1000)
 
     return () => {
-      clearTimeout(timeout)
+      mounted = false
+      clearTimeout(hardTimeout)
       clearInterval(refreshInterval)
       subscription.unsubscribe()
     }
