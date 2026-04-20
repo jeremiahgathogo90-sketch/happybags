@@ -1,29 +1,30 @@
 import { useState, useEffect } from 'react'
 
-export default function ProductGrid({ children, mobileMax = 4 }) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+export default function ProductGrid({ children, mobileMax = null }) {
+  const [cols, setCols] = useState(2)
 
   useEffect(() => {
-    function check() { setIsMobile(window.innerWidth < 640) }
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    function updateCols() {
+      const w = window.innerWidth
+      if (w >= 1280) setCols(5)
+      else if (w >= 1024) setCols(4)
+      else if (w >= 640)  setCols(3)
+      else setCols(2)
+    }
+    updateCols()
+    window.addEventListener('resize', updateCols)
+    return () => window.removeEventListener('resize', updateCols)
   }, [])
 
-  // Convert children to array and filter nulls
   const allItems = Array.isArray(children)
     ? children.flat().filter(Boolean)
     : children ? [children] : []
 
-  // On mobile limit to mobileMax, on desktop show all
-  const visibleItems = isMobile ? allItems.slice(0, mobileMax) : allItems
-
-  const cols = (() => {
-    const w = window.innerWidth
-    if (w >= 1280) return 5
-    if (w >= 1024) return 4
-    if (w >= 640)  return 3
-    return 2
-  })()
+  // Only limit on mobile if mobileMax is explicitly passed
+  const isMobile     = cols === 2
+  const visibleItems = (mobileMax && isMobile)
+    ? allItems.slice(0, mobileMax)
+    : allItems
 
   return (
     <div style={{

@@ -298,7 +298,7 @@ export default function HomePage() {
               <Link to="/products?flash=true" style={{ color: '#fff', fontSize: '12px', fontWeight: 500, textDecoration: 'none' }}>See All →</Link>
             </div>
             <div style={{ background: '#fef2f2', borderRadius: '0 0 12px 12px', padding: '14px' }}>
-              <ProductGrid>
+              <ProductGrid mobileMax={4}>
                 {flashItems.map(item => item.product && <ProductCard key={item.id} product={item.product} flashPrice={item.sale_price} />)}
               </ProductGrid>
             </div>
@@ -313,7 +313,7 @@ export default function HomePage() {
               <p style={{ color: '#94a3b8', fontSize: '13px' }}>No featured products yet.</p>
             </div>
           ) : (
-            <ProductGrid>{featured.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
+            <ProductGrid mobileMax={4}>{featured.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
           )}
         </section>
 
@@ -321,7 +321,7 @@ export default function HomePage() {
         {popular.length > 0 && (
           <section>
             <SectionHeader title="Best Sellers" seeAllLink="/products?sort=popular" />
-            <ProductGrid>{popular.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
+            <ProductGrid mobileMax={4}>{popular.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
           </section>
         )}
 
@@ -333,7 +333,7 @@ export default function HomePage() {
               <p style={{ color: '#94a3b8', fontSize: '13px' }}>No products yet.</p>
             </div>
           ) : (
-            <ProductGrid>{newest.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
+            <ProductGrid mobileMax={4}>{newest.map(p => <ProductCard key={p.id} product={p} />)}</ProductGrid>
           )}
         </section>
 
