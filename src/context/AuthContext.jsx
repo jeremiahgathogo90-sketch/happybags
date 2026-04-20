@@ -17,8 +17,7 @@ export function AuthProvider({ children }) {
         .maybeSingle()
       setProfile(data)
       return data
-    } catch (err) {
-      console.error('fetchProfile error:', err)
+    } catch {
       return null
     }
   }, [])
@@ -26,36 +25,30 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true
 
-    // Hard timeout — no matter what, stop loading after 2 seconds
+    // Always stop loading after 1.5 seconds no matter what
     const hardTimeout = setTimeout(() => {
-      if (mounted) {
-        console.log('Auth hard timeout fired')
-        setLoading(false)
-      }
-    }, 5000)
+      if (mounted) setLoading(false)
+    }, 1500)
 
-    async function initAuth() {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!mounted) return
-        setUser(session?.user ?? null)
-        if (session?.user) await fetchProfile(session.user.id)
-      } catch (err) {
-        console.error('initAuth error:', err)
-      } finally {
-        if (mounted) {
-          clearTimeout(hardTimeout)
-          setLoading(false)
-        }
-      }
-    }
-
-    initAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Get session immediately on mount
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return
-      console.log('Auth event:', event)
+      clearTimeout(hardTimeout)
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        // Fetch profile in background — don't block page load
+        fetchProfile(session.user.id)
+      }
+      setLoading(false)
+    }).catch(() => {
+      if (mounted) setLoading(false)
+    })
 
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
+
+      // Only handle these specific events
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setProfile(null)
@@ -63,30 +56,26 @@ export function AuthProvider({ children }) {
         return
       }
 
-      if (event === 'TOKEN_REFRESHED') {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         setUser(session?.user ?? null)
+        if (session?.user && event === 'SIGNED_IN') {
+          fetchProfile(session.user.id)
+        }
         setLoading(false)
         return
       }
 
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setProfile(null)
-      }
+      // INITIAL_SESSION — already handled by getSession above
       setLoading(false)
     })
 
-    // Auto refresh session every 50 minutes
+    // Auto refresh every 50 minutes
     const refreshInterval = setInterval(async () => {
       if (!mounted) return
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) await supabase.auth.refreshSession()
-      } catch (err) {
-        console.error('Session refresh error:', err)
-      }
+      } catch {}
     }, 50 * 60 * 1000)
 
     return () => {
@@ -102,8 +91,8 @@ export function AuthProvider({ children }) {
 
   async function signOut() {
     await supabase.auth.signOut()
-    setProfile(null)
     setUser(null)
+    setProfile(null)
   }
 
   return (
