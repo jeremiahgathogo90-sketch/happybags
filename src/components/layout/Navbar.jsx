@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, ShoppingCart, Heart, User, Menu, X, ChevronDown, LogOut, Package, Settings } from 'lucide-react'
+import { Search, ShoppingCart, Heart, User, Menu, X, ChevronDown, LogOut, Package, LayoutDashboard } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { useCart } from '@/context/CartContext'
 
 export default function Navbar() {
-  const { isLoggedIn, profile, signOut } = useAuth()
+  const { isLoggedIn, isAdmin, profile, signOut } = useAuth()
   const { itemCount } = useCart()
   const navigate  = useNavigate()
 
@@ -56,12 +56,7 @@ export default function Navbar() {
             <img
               src="/logo.png"
               alt="HappyBags"
-              style={{
-                width: '38px',
-                height: '38px',
-                objectFit: 'contain',
-                borderRadius: '8px',
-              }}
+              style={{ width: '38px', height: '38px', objectFit: 'contain', borderRadius: '8px' }}
               onError={e => { e.target.style.display = 'none' }}
             />
             <span style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.3px' }}>
@@ -86,7 +81,28 @@ export default function Navbar() {
           </form>
 
           {/* Right actions */}
-          <div className="flex items-center gap-1 md:gap-3 ml-auto md:ml-0">
+          <div className="flex items-center gap-2 md:gap-3 ml-auto md:ml-0">
+
+            {/* Admin button — only shows for admin users */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  background: '#1d4ed8', color: '#fff',
+                  padding: '7px 14px', borderRadius: '8px',
+                  fontSize: '13px', fontWeight: 600,
+                  textDecoration: 'none', flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(29,78,216,0.3)',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#1e3a8a'}
+                onMouseLeave={e => e.currentTarget.style.background = '#1d4ed8'}
+              >
+                <LayoutDashboard size={14} />
+                <span className="hidden sm:block">Admin</span>
+              </Link>
+            )}
 
             {/* Account dropdown */}
             <div className="relative" ref={accountRef}>
@@ -120,8 +136,28 @@ export default function Navbar() {
                     <>
                       <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
                         <p style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b' }}>{profile?.full_name || 'User'}</p>
-                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{profile?.email || ''}</p>
+                        {isAdmin && (
+                          <span style={{ fontSize: '10px', background: '#dbeafe', color: '#1d4ed8', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                            ADMIN
+                          </span>
+                        )}
                       </div>
+
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setAccountOpen(false)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '10px',
+                            padding: '10px 16px', fontSize: '13px', color: '#1d4ed8',
+                            textDecoration: 'none', fontWeight: 600,
+                            background: '#eff6ff', borderBottom: '1px solid #f1f5f9',
+                          }}
+                        >
+                          <LayoutDashboard size={15} /> Admin Dashboard
+                        </Link>
+                      )}
+
                       {[
                         { to: '/profile', icon: User,    label: 'My Profile' },
                         { to: '/orders',  icon: Package, label: 'My Orders' },
@@ -133,7 +169,7 @@ export default function Navbar() {
                           style={{
                             display: 'flex', alignItems: 'center', gap: '10px',
                             padding: '10px 16px', fontSize: '13px', color: '#374151',
-                            textDecoration: 'none', transition: 'background 0.15s',
+                            textDecoration: 'none',
                           }}
                           onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -141,6 +177,7 @@ export default function Navbar() {
                           <Icon size={15} className="text-gray-400" /> {label}
                         </Link>
                       ))}
+
                       <button
                         onClick={handleSignOut}
                         style={{
@@ -148,7 +185,7 @@ export default function Navbar() {
                           padding: '10px 16px', fontSize: '13px', color: '#ef4444',
                           background: 'none', border: 'none', cursor: 'pointer',
                           width: '100%', textAlign: 'left',
-                          borderTop: '1px solid #f1f5f9', transition: 'background 0.15s',
+                          borderTop: '1px solid #f1f5f9',
                         }}
                         onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -216,17 +253,11 @@ export default function Navbar() {
         {/* Category nav — desktop */}
         {categories.length > 0 && (
           <div className="hidden md:flex items-center gap-1 pb-2 overflow-x-auto">
-            <Link
-              to="/products"
-              className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-            >
+            <Link to="/products" className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
               All Products
             </Link>
-            <Link
-              to="/about"
-              className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-           >
-             About Us
+            <Link to="/about" className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+              About Us
             </Link>
             {categories.map(cat => (
               <Link
@@ -245,7 +276,6 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div style={{ background: '#fff', borderTop: '1px solid #e2e8f0', padding: '16px' }}>
-          {/* Mobile search */}
           <form onSubmit={handleSearch} className="flex mb-4">
             <input
               value={search}
@@ -258,7 +288,22 @@ export default function Navbar() {
             </button>
           </form>
 
-          {/* Mobile categories */}
+          {isAdmin && (
+            <Link
+              to="/admin"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                background: '#1d4ed8', color: '#fff',
+                padding: '10px 14px', borderRadius: '8px',
+                fontSize: '13px', fontWeight: 600,
+                textDecoration: 'none', marginBottom: '12px',
+              }}
+            >
+              <LayoutDashboard size={15} /> Go to Admin Dashboard
+            </Link>
+          )}
+
           <div className="flex flex-wrap gap-2 mb-4">
             <Link to="/products" onClick={() => setMobileOpen(false)} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700">
               All Products
@@ -275,7 +320,6 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Mobile auth links */}
           {!isLoggedIn && (
             <div className="flex gap-3 pt-3 border-t border-gray-100">
               <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium">
