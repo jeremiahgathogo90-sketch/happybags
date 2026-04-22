@@ -24,7 +24,7 @@ export default function CheckoutPage() {
 
   const [step, setStep]     = useState(1)
   const [saving, setSaving] = useState(false)
-  const [method, setMethod] = useState('mpesa')
+  const [method, setMethod] = useState('cod')
 
   const [threshold, setThreshold]     = useState(2000)
   const [defaultFee, setDefaultFee]   = useState(200)
