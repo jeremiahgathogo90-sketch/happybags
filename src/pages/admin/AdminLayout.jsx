@@ -8,7 +8,7 @@ import {
 import { useAuth } from '@/context/AuthContext'
 
 const NAV = [
-  { to: '/admin',             icon: LayoutDashboard, label: 'Dashboard',   end: true },
+  { to: '/admin',             icon: LayoutDashboard, label: 'Dashboard',  end: true },
   { to: '/admin/products',    icon: Package,         label: 'Products' },
   { to: '/admin/categories',  icon: Tag,             label: 'Categories' },
   { to: '/admin/orders',      icon: ShoppingBag,     label: 'Orders' },
@@ -30,25 +30,34 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div style={{
+      display: 'flex',
+      height: '100vh',        // Full viewport height
+      overflow: 'hidden',     // Nothing escapes this container
+      background: '#f1f5f9',
+    }}>
 
-      {/* Sidebar */}
-      <aside
-        style={{
-          width: open ? '224px' : '64px',
-          background: '#ffffff',
-          borderRight: '1px solid #e2e8f0',
-          display: 'flex',
-          flexDirection: 'column',
-          transition: 'width 0.2s ease',
-          flexShrink: 0,
-        }}
-      >
+      {/* Sidebar — fixed height, scrollable nav */}
+      <aside style={{
+        width: open ? '224px' : '64px',
+        minWidth: open ? '224px' : '64px',
+        background: '#ffffff',
+        borderRight: '1px solid #e2e8f0',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',      // Full height always
+        overflow: 'hidden',   // Sidebar never scrolls horizontally
+        transition: 'width 0.2s ease, min-width 0.2s ease',
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+      }}>
+
         {/* Logo */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '16px', borderBottom: '1px solid #e2e8f0',
-          overflow: 'hidden',
+          overflow: 'hidden', flexShrink: 0,
         }}>
           <div style={{
             width: '32px', height: '32px', background: '#2563eb',
@@ -70,7 +79,7 @@ export default function AdminLayout() {
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             padding: '8px', color: '#94a3b8', background: 'none', border: 'none',
-            cursor: 'pointer', transition: 'color 0.15s',
+            cursor: 'pointer', flexShrink: 0,
           }}
           onMouseEnter={e => e.currentTarget.style.color = '#475569'}
           onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
@@ -78,27 +87,26 @@ export default function AdminLayout() {
           {open ? <X size={16} /> : <Menu size={16} />}
         </button>
 
-        {/* Nav items */}
-        <nav style={{ flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
+        {/* Nav — scrollable if many items */}
+        <nav style={{
+          flex: 1, padding: '8px',
+          display: 'flex', flexDirection: 'column', gap: '2px',
+          overflowY: 'auto', overflowX: 'hidden',
+        }}>
           {NAV.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
               style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '10px 12px',
-                borderRadius: '10px',
-                textDecoration: 'none',
-                fontSize: '14px',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 12px', borderRadius: '10px',
+                textDecoration: 'none', fontSize: '14px',
                 fontWeight: isActive ? 600 : 400,
                 color: isActive ? '#2563eb' : '#64748b',
                 background: isActive ? '#eff6ff' : 'transparent',
                 transition: 'all 0.15s',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
+                overflow: 'hidden', whiteSpace: 'nowrap',
               })}
               onMouseEnter={e => {
                 if (!e.currentTarget.style.background.includes('eff6ff')) {
@@ -119,7 +127,7 @@ export default function AdminLayout() {
           ))}
         </nav>
 
-        {/* View Store — same tab using Link */}
+        {/* View Store */}
         {open && (
           <Link
             to="/"
@@ -127,8 +135,7 @@ export default function AdminLayout() {
               display: 'flex', alignItems: 'center', gap: '8px',
               padding: '12px 16px', color: '#64748b',
               textDecoration: 'none', fontSize: '13px',
-              borderTop: '1px solid #e2e8f0',
-              transition: 'color 0.15s',
+              borderTop: '1px solid #e2e8f0', flexShrink: 0,
             }}
             onMouseEnter={e => e.currentTarget.style.color = '#2563eb'}
             onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
@@ -145,8 +152,8 @@ export default function AdminLayout() {
             padding: '14px 16px', color: '#94a3b8',
             background: 'none', border: 'none', cursor: 'pointer',
             fontSize: '14px', borderTop: '1px solid #e2e8f0',
-            transition: 'color 0.15s', textAlign: 'left',
-            overflow: 'hidden', whiteSpace: 'nowrap',
+            textAlign: 'left', overflow: 'hidden', whiteSpace: 'nowrap',
+            flexShrink: 0,
           }}
           onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
           onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}
@@ -156,14 +163,25 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      {/* Main content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Right side — header + scrollable content */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',      // Full height
+        overflow: 'hidden',   // Contain the scroll
+        minWidth: 0,
+      }}>
 
-        {/* Top bar */}
+        {/* Top bar — fixed, never scrolls */}
         <header style={{
-          background: '#fff', borderBottom: '1px solid #e2e8f0',
-          padding: '12px 24px', display: 'flex',
-          alignItems: 'center', justifyContent: 'space-between',
+          background: '#fff',
+          borderBottom: '1px solid #e2e8f0',
+          padding: '12px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,       // Never shrinks
         }}>
           <h1 style={{ fontSize: '14px', fontWeight: 500, color: '#94a3b8', margin: 0 }}>
             Store Management
@@ -173,7 +191,7 @@ export default function AdminLayout() {
               width: '32px', height: '32px', borderRadius: '50%',
               background: '#dbeafe', color: '#2563eb',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '12px', fontWeight: 700, flexShrink: 0,
+              fontSize: '12px', fontWeight: 700,
             }}>
               {(profile?.full_name || 'A')[0].toUpperCase()}
             </div>
@@ -185,8 +203,13 @@ export default function AdminLayout() {
           </div>
         </header>
 
-        {/* Page content */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        {/* Page content — ONLY this scrolls */}
+        <main style={{
+          flex: 1,
+          overflowY: 'auto',   // Only this scrolls
+          overflowX: 'hidden',
+          padding: '24px',
+        }}>
           <Outlet />
         </main>
       </div>
