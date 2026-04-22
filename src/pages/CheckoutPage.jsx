@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import { formatKES } from '@/lib/utils'
-import { MapPin, Phone, ChevronRight, Lock, Smartphone, Truck, CheckCircle, User } from 'lucide-react'
+import { MapPin, Phone, ChevronRight, Lock, Smartphone, Truck, CheckCircle, User, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const COUNTIES = [
@@ -25,6 +25,7 @@ export default function CheckoutPage() {
   const [step, setStep]     = useState(1)
   const [saving, setSaving] = useState(false)
   const [method, setMethod] = useState('cod')
+  const [notes, setNotes]   = useState('')
 
   const [threshold, setThreshold]     = useState(2000)
   const [defaultFee, setDefaultFee]   = useState(200)
@@ -79,7 +80,6 @@ export default function CheckoutPage() {
     const loadingToast = toast.loading('Creating order...')
 
     try {
-      // Create order — works for both guests and logged in users
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -94,6 +94,7 @@ export default function CheckoutPage() {
           phone:            address.phone,
           delivery_address: address,
           guest_email:      !user ? address.email : null,
+          notes:            notes || null,
         })
         .select()
         .single()
@@ -105,7 +106,6 @@ export default function CheckoutPage() {
         return
       }
 
-      // Insert order items
       const orderItems = items.map(item => ({
         order_id:      order.id,
         product_id:    item.product_id,
@@ -125,55 +125,8 @@ export default function CheckoutPage() {
         return
       }
 
-      // M-Pesa STK Push
-      if (method === 'mpesa') {
-        toast.dismiss(loadingToast)
-        const stkToast = toast.loading('Sending M-Pesa request to ' + address.phone + '...')
-
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-
-          const stkResponse = await fetch(
-            import.meta.env.VITE_SUPABASE_URL + '/functions/v1/mpesa-stk-push',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type':  'application/json',
-                'Authorization': 'Bearer ' + (session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY),
-                'apikey':        import.meta.env.VITE_SUPABASE_ANON_KEY,
-              },
-              body: JSON.stringify({ phone: address.phone, amount: total, orderId: order.id }),
-            }
-          )
-
-          const stkData = await stkResponse.json()
-          toast.dismiss(stkToast)
-          console.log('STK response:', stkData)
-
-          if (!stkResponse.ok || stkData.error) {
-            toast.error('M-Pesa request failed. Try again or use Pay on Delivery.')
-            setSaving(false)
-            return
-          }
-
-          if (stkData.ResponseCode === '0') {
-            toast.success('M-Pesa prompt sent to ' + address.phone + '! Enter your PIN.', { duration: 8000, icon: '📱' })
-          } else {
-            toast.error(stkData.ResponseDescription || 'M-Pesa request failed')
-            setSaving(false)
-            return
-          }
-        } catch (fetchErr) {
-          toast.dismiss(stkToast)
-          toast.error('Could not reach M-Pesa. Try Pay on Delivery.')
-          setSaving(false)
-          return
-        }
-
-      } else {
-        toast.dismiss(loadingToast)
-        toast.success('Order placed! Pay cash on delivery.', { duration: 5000, icon: '✅' })
-      }
+      toast.dismiss(loadingToast)
+      toast.success('Order placed! Pay cash on delivery.', { duration: 5000, icon: '✅' })
 
       await clearCart()
       setSaving(false)
@@ -193,7 +146,7 @@ export default function CheckoutPage() {
 
       {/* Steps */}
       <div className="flex items-center gap-2 mb-8">
-        {['Delivery', 'Payment', 'Review'].map((s, i) => (
+        {['Delivery & Notes', 'Payment', 'Review'].map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div className={['flex items-center gap-2', step > i + 1 ? 'text-green-600' : step === i + 1 ? 'text-blue-600' : 'text-gray-400'].join(' ')}>
               <div className={['w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all', step > i + 1 ? 'bg-green-600 border-green-600 text-white' : step === i + 1 ? 'border-blue-600 text-blue-600' : 'border-gray-300 text-gray-400'].join(' ')}>
@@ -209,11 +162,10 @@ export default function CheckoutPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="flex-1">
 
-          {/* Step 1 — Delivery */}
+          {/* Step 1 — Delivery & Notes */}
           {step === 1 && (
             <div className="bg-white rounded-xl border border-gray-100 p-6">
 
-              {/* Guest notice */}
               {!user && (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-5 flex items-start gap-3">
                   <User size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
@@ -237,14 +189,13 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (M-Pesa) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
                   <div className="relative">
                     <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input value={address.phone} onChange={setA('phone')} required placeholder="0712 345 678" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                 </div>
 
-                {/* Email for guests */}
                 {!user && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
@@ -285,6 +236,25 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Order Notes */}
+                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    <FileText size={15} className="text-blue-500" />
+                    Order Notes / Special Instructions
+                    <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder="Describe your requirements here...&#10;&#10;e.g. I need 100 blue non-woven bags size 30x40cm. Please call me before delivery. I also want 50 gift bags with red ribbons."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none bg-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    💡 Specify sizes, colors, quantities, printing requirements or any special requests
+                  </p>
+                </div>
+
                 <button
                   onClick={() => {
                     if (!address.full_name || !address.phone || !address.county || !address.town) {
@@ -312,21 +282,17 @@ export default function CheckoutPage() {
                 <Lock size={18} className="text-blue-600" /> Payment Method
               </h2>
               <div className="space-y-3">
-                {[
-                  { id: 'cod',   label: 'Pay on Delivery Withing CBD Nairobi', sub: 'Cash when order arrives', icon: MapPin, iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
-                ].map(({ id, label, sub, icon: Icon, iconColor, iconBg, badge }) => (
-                  <label key={id} className={['flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all', method === id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'].join(' ')}>
-                    <input type="radio" name="method" value={id} checked={method === id} onChange={() => setMethod(id)} className="text-blue-600" />
-                    <div className={['w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', iconBg].join(' ')}>
-                      <Icon size={20} className={iconColor} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800">{label}</p>
-                      <p className="text-xs text-gray-500">{sub}</p>
-                    </div>
-                    {badge && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium flex-shrink-0">{badge}</span>}
-                  </label>
-                ))}
+                <label className="flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all border-blue-500 bg-blue-50">
+                  <input type="radio" name="method" value="cod" checked={method === 'cod'} onChange={() => setMethod('cod')} className="text-blue-600" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-orange-100">
+                    <MapPin size={20} className="text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-800">Pay on Delivery</p>
+                    <p className="text-xs text-gray-500">Cash when order arrives</p>
+                  </div>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium flex-shrink-0">Available</span>
+                </label>
               </div>
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setStep(1)} className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl text-sm font-medium hover:bg-gray-50">Back</button>
@@ -350,6 +316,16 @@ export default function CheckoutPage() {
                 {!user && address.email && <p className="text-sm text-gray-600">{address.email}</p>}
               </div>
 
+              {/* Show notes in review */}
+              {notes && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-medium text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <FileText size={12} /> Order Notes
+                  </p>
+                  <p className="text-sm text-amber-800 whitespace-pre-wrap">{notes}</p>
+                </div>
+              )}
+
               <div className="space-y-3 mb-4">
                 {items.map(item => (
                   <div key={item.id} className="flex items-center gap-3">
@@ -366,18 +342,9 @@ export default function CheckoutPage() {
               <div className="bg-gray-50 rounded-xl p-4 mb-5">
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1">Payment Method</p>
                 <p className="font-medium text-gray-800 flex items-center gap-2">
-                  {method === 'mpesa'
-                    ? <><Smartphone size={16} className="text-green-600" /> M-Pesa ({address.phone})</>
-                    : <><MapPin size={16} className="text-orange-600" /> Pay on Delivery</>
-                  }
+                  <MapPin size={16} className="text-orange-600" /> Pay on Delivery
                 </p>
               </div>
-
-              {method === 'mpesa' && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-5 text-sm text-green-700">
-                  📱 You will receive an M-Pesa prompt on <strong>{address.phone}</strong>. Enter your PIN to complete payment.
-                </div>
-              )}
 
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-xl text-sm font-medium hover:bg-gray-50">Back</button>
@@ -388,7 +355,7 @@ export default function CheckoutPage() {
                 >
                   {saving
                     ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
-                    : method === 'mpesa' ? '📱 Pay with M-Pesa' : 'Place Order'
+                    : 'Place Order ✅'
                   }
                 </button>
               </div>
@@ -396,7 +363,7 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* Order summary */}
+        {/* Order Summary */}
         <div className="lg:w-72 flex-shrink-0">
           <div className="bg-white rounded-xl border border-gray-100 p-5 sticky top-20">
             <h3 className="font-bold text-gray-900 mb-4">Order Summary</h3>

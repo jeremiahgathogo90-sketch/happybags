@@ -380,15 +380,20 @@ export default function AdminProducts() {
                 <textarea value={form.description} onChange={set('description')} rows={3} placeholder="Describe the product..." className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none" />
               </div>
 
-              {/* Images */}
+             {/* Images */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Product Images
-                  <span className="text-xs text-gray-400 ml-2 font-normal">Auto-compressed to max 800px</span>
+                  Product Images ({images.length} uploaded)
+                  <span className="text-xs text-gray-400 ml-2 font-normal">Auto-compressed — upload as many as you want</span>
                 </label>
-                <div className="flex flex-wrap gap-2 mb-2">
+
+                {/* Image previews */}
+                <div className="flex flex-wrap gap-2 mb-3">
                   {images.map((url, i) => (
-                    <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 group">
+                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group flex-shrink-0">
+                      {i === 0 && (
+                        <div className="absolute top-1 left-1 z-10 bg-blue-600 text-white text-xs px-1 rounded font-medium">Main</div>
+                      )}
                       <img
                         src={url + '?width=80&quality=60'}
                         alt=""
@@ -404,24 +409,37 @@ export default function AdminProducts() {
                       </button>
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    disabled={uploading}
-                    className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors text-xs gap-1 disabled:opacity-50"
-                  >
-                    <Upload size={16} />
-                    {uploading ? '...' : 'Upload'}
-                  </button>
                 </div>
-                {uploadProgress && (
-                  <div className="flex items-center gap-2 text-xs text-blue-600 mb-1">
-                    <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    {uploadProgress}
-                  </div>
-                )}
-                <input ref={fileRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                <p className="text-xs text-gray-400">Upload JPG, PNG or WebP. Images are automatically compressed. First image becomes the thumbnail.</p>
+
+                {/* Upload area */}
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
+                >
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-blue-600 font-medium">{uploadProgress}</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload size={24} className="text-gray-400" />
+                      <p className="text-sm font-medium text-gray-600">Click to upload images</p>
+                      <p className="text-xs text-gray-400">Select multiple images at once — JPG, PNG, WebP</p>
+                      <p className="text-xs text-gray-400">Images auto-compressed for fast loading</p>
+                    </div>
+                  )}
+                </div>
+
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">First image becomes the main thumbnail shown on product cards.</p>
               </div>
 
               {/* Toggles */}
