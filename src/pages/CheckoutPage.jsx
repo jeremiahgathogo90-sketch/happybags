@@ -313,8 +313,7 @@ export default function CheckoutPage() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { id: 'mpesa', label: 'M-Pesa', sub: 'STK push to ' + (address.phone || 'your phone'), icon: Smartphone, iconColor: 'text-green-600', iconBg: 'bg-green-100', badge: 'Recommended' },
-                  { id: 'cod',   label: 'Pay on Delivery', sub: 'Cash when order arrives', icon: MapPin, iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
+                  { id: 'cod',   label: 'Pay on Delivery Withing CBD Nairobi', sub: 'Cash when order arrives', icon: MapPin, iconColor: 'text-orange-600', iconBg: 'bg-orange-100' },
                 ].map(({ id, label, sub, icon: Icon, iconColor, iconBg, badge }) => (
                   <label key={id} className={['flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all', method === id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'].join(' ')}>
                     <input type="radio" name="method" value={id} checked={method === id} onChange={() => setMethod(id)} className="text-blue-600" />
