@@ -5,16 +5,16 @@ import { formatKES, discountPct, truncate } from '@/lib/utils'
 import { useCart } from '@/context/CartContext'
 
 export default function ProductCard({ product, flashPrice = null }) {
-  const { addToCart }  = useCart()
-  const [imgLoaded, setImgLoaded] = useState(false)
-  const [imgError, setImgError]   = useState(false)
+  const { addToCart }                   = useCart()
+  const [imgError, setImgError]         = useState(false)
+  const [isHovered, setIsHovered]       = useState(false)
 
   const displayPrice  = flashPrice ?? product.price
   const originalPrice = flashPrice ? product.price : product.original_price
   const discount      = discountPct(originalPrice, displayPrice)
   const outOfStock    = product.stock_qty === 0
-  const raw = product.thumbnail || product.images?.[0] || null
-  const thumbnail = raw && raw.includes('supabase') ? raw + '?width=400&quality=70' : raw
+  const raw           = product.thumbnail || product.images?.[0] || null
+  const thumbnail     = raw && raw.includes('supabase') ? raw + '?width=400&quality=70' : raw
 
   function handleAddToCart(e) {
     e.preventDefault()
@@ -23,89 +23,85 @@ export default function ProductCard({ product, flashPrice = null }) {
   }
 
   return (
-    <div style={{
-      background: '#ffffff',
-      borderRadius: '14px',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.10)',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      position: 'relative',
-      border: '1px solid #e2e8f0',
-      width: '100%',
-    }}>
-
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        background: '#ffffff',
+        borderRadius: '14px',
+        overflow: 'hidden',
+        position: 'relative',
+        border: '1px solid #e2e8f0',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        boxShadow: isHovered ? '0 8px 24px rgba(0,0,0,0.14)' : '0 2px 8px rgba(0,0,0,0.07)',
+        transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
+        transition: 'all 0.25s ease',
+      }}
+    >
       {/* Discount badge */}
       {discount > 0 && (
         <div style={{
           position: 'absolute', top: '10px', left: '10px', zIndex: 10,
           background: '#2563eb', color: '#fff', fontSize: '11px',
-          fontWeight: 700, padding: '2px 8px', borderRadius: '6px',
-          pointerEvents: 'none',
+          fontWeight: 700, padding: '3px 8px', borderRadius: '6px',
         }}>
           -{discount}%
         </div>
       )}
 
-      {/* Image */}
-      <Link to={'/products/' + product.slug} style={{ display: 'block', textDecoration: 'none' }}>
+      {/* Out of stock badge */}
+      {outOfStock && (
         <div style={{
-          background: '#dde6f5',
+          position: 'absolute', top: '10px', right: '10px', zIndex: 10,
+          background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '10px',
+          fontWeight: 600, padding: '3px 8px', borderRadius: '6px',
+        }}>
+          Out of stock
+        </div>
+      )}
+
+      {/* Image — fills the card, zooms on hover */}
+      <Link
+        to={'/products/' + product.slug}
+        style={{ display: 'block', textDecoration: 'none', overflow: 'hidden' }}
+      >
+        <div style={{
           width: '100%',
           aspectRatio: '1 / 1',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '14px',
-          boxSizing: 'border-box',
           overflow: 'hidden',
+          background: '#f1f5f9',
           position: 'relative',
         }}>
-          {/* Skeleton shimmer while loading */}
-          {!imgLoaded && !imgError && thumbnail && (
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(90deg, #dde6f5 25%, #c8d8ee 50%, #dde6f5 75%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 1.5s infinite',
-            }} />
-          )}
-
           {thumbnail && !imgError ? (
             <img
               src={thumbnail}
               alt={product.name}
               loading="lazy"
               decoding="async"
-              onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
               style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                boxShadow: imgLoaded ? '0 4px 14px rgba(0,0,0,0.18)' : 'none',
-                background: '#ffffff',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',        // Fills the whole card like pic 2
+                objectPosition: 'center',
                 display: 'block',
-                opacity: imgLoaded ? 1 : 0,
-                transition: 'opacity 0.3s ease',
+                transform: isHovered ? 'scale(1.08)' : 'scale(1)',  // Zoom on hover
+                transition: 'transform 0.4s ease',
               }}
             />
           ) : (
             <div style={{
-              width: '100%', height: '100%', borderRadius: '8px',
-              background: '#f1f5f9', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              color: '#94a3b8', fontSize: '12px',
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#94a3b8', fontSize: '12px', background: '#f8fafc',
             }}>
               No image
             </div>
           )}
         </div>
       </Link>
-
-      {/* Divider */}
-      <div style={{ height: '1px', background: '#e2e8f0' }} />
 
       {/* Info */}
       <div style={{ padding: '10px 12px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -132,9 +128,7 @@ export default function ProductCard({ product, flashPrice = null }) {
 
         <div style={{ marginTop: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>
-              {formatKES(displayPrice)}
-            </span>
+            <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{formatKES(displayPrice)}</span>
             {originalPrice && originalPrice > displayPrice && (
               <span style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>
                 {formatKES(originalPrice)}
@@ -146,28 +140,19 @@ export default function ProductCard({ product, flashPrice = null }) {
             onClick={handleAddToCart}
             disabled={outOfStock}
             style={{
-              width: '100%', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: '5px', padding: '8px 0',
-              borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+              width: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+              padding: '8px 0', borderRadius: '8px',
+              fontSize: '12px', fontWeight: 600,
               cursor: outOfStock ? 'not-allowed' : 'pointer',
               border: outOfStock ? '1px solid #e2e8f0' : '1.5px solid #93c5fd',
-              background: outOfStock ? '#f8fafc' : '#eff6ff',
-              color: outOfStock ? '#94a3b8' : '#2563eb',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={e => {
-              if (!outOfStock) {
-                e.currentTarget.style.background = '#2563eb'
-                e.currentTarget.style.color = '#fff'
-                e.currentTarget.style.border = '1.5px solid #2563eb'
-              }
-            }}
-            onMouseLeave={e => {
-              if (!outOfStock) {
-                e.currentTarget.style.background = '#eff6ff'
-                e.currentTarget.style.color = '#2563eb'
-                e.currentTarget.style.border = '1.5px solid #93c5fd'
-              }
+              background: outOfStock
+                ? '#f8fafc'
+                : isHovered ? '#2563eb' : '#eff6ff',
+              color: outOfStock
+                ? '#94a3b8'
+                : isHovered ? '#fff' : '#2563eb',
+              transition: 'all 0.2s ease',
             }}
           >
             <ShoppingCart size={13} />
@@ -175,15 +160,6 @@ export default function ProductCard({ product, flashPrice = null }) {
           </button>
         </div>
       </div>
-
-      {/* Shimmer animation */}
-      <style>{`
-        @keyframes shimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-      `}</style>
     </div>
   )
 }
-
