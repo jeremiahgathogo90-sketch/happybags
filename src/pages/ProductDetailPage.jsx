@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { ShoppingCart, Heart, Star, ChevronRight, Minus, Plus, Truck, Shield, RotateCcw, Check } from 'lucide-react'
@@ -18,10 +18,10 @@ function Spinner() {
 }
 
 export default function ProductDetailPage() {
-  const { slug }       = useParams()
-  const { addToCart }  = useCart()
+  const { slug }      = useParams()
+  const { addToCart } = useCart()
   const { isLoggedIn } = useAuth()
-  const navigate       = useNavigate()
+  const navigate      = useNavigate()
 
   const [product, setProduct]         = useState(null)
   const [related, setRelated]         = useState([])
@@ -68,7 +68,7 @@ export default function ProductDetailPage() {
   }, [slug, navigate])
 
   async function handleAddToCart() {
-    if (!isLoggedIn) { navigate('/login'); return }
+    // No login required — guests can add to cart
     await addToCart(product.id, qty)
     setAddedToCart(true)
     setTimeout(() => setAddedToCart(false), 2000)
@@ -109,7 +109,7 @@ export default function ProductDetailPage() {
       <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
         <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* Zoomable image component */}
+          {/* Image with zoom */}
           <div className="lg:w-2/5 flex-shrink-0">
             <ImageZoom images={images} alt={product.name} />
           </div>
@@ -178,7 +178,10 @@ export default function ProductDetailPage() {
                 disabled={outOfStock}
                 className="flex-1 min-w-[160px] flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {addedToCart ? <><Check size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
+                {addedToCart
+                  ? <><Check size={18} /> Added!</>
+                  : <><ShoppingCart size={18} /> Add to Cart</>
+                }
               </button>
               <button
                 onClick={handleWishlist}
@@ -247,7 +250,7 @@ export default function ProductDetailPage() {
         )}
       </div>
 
-      {/* Related products */}
+      {/* Related */}
       {related.length > 0 && (
         <div>
           <h2 className="font-bold text-gray-900 mb-4">Related Products</h2>

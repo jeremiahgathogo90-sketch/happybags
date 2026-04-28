@@ -2,32 +2,32 @@ import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 
 export default function ImageZoom({ images = [], alt = '' }) {
-  const [activeIdx, setActiveIdx]   = useState(0)
-  const [lightbox, setLightbox]     = useState(false)
+  const [activeIdx, setActiveIdx]     = useState(0)
+  const [lightbox, setLightbox]       = useState(false)
   const [lightboxIdx, setLightboxIdx] = useState(0)
-  const [zoomed, setZoomed]         = useState(false)
-  const [pos, setPos]               = useState({ x: 50, y: 50 })
+  const [zoomed, setZoomed]           = useState(false)
+  const [pos, setPos]                 = useState({ x: 50, y: 50 })
+  const [hovered, setHovered]         = useState(false)
 
   const allImages = images.filter(Boolean)
+
   if (allImages.length === 0) return (
     <div style={{ background: '#dde6f5', borderRadius: '16px', aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
       No image
     </div>
   )
 
-  // Close lightbox on Escape key
   useEffect(() => {
     if (!lightbox) return
     function onKey(e) {
-      if (e.key === 'Escape')      { setLightbox(false); setZoomed(false) }
-      if (e.key === 'ArrowRight')  setLightboxIdx(i => (i + 1) % allImages.length)
-      if (e.key === 'ArrowLeft')   setLightboxIdx(i => (i - 1 + allImages.length) % allImages.length)
+      if (e.key === 'Escape')     { setLightbox(false); setZoomed(false) }
+      if (e.key === 'ArrowRight') setLightboxIdx(i => (i + 1) % allImages.length)
+      if (e.key === 'ArrowLeft')  setLightboxIdx(i => (i - 1 + allImages.length) % allImages.length)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [lightbox, allImages.length])
 
-  // Prevent body scroll when lightbox open
   useEffect(() => {
     document.body.style.overflow = lightbox ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -49,52 +49,53 @@ export default function ImageZoom({ images = [], alt = '' }) {
 
   return (
     <>
-      {/* Main image display */}
       <div>
-        {/* Primary image */}
+        {/* Main image — cover + zoom on hover */}
         <div
           onClick={() => openLightbox(activeIdx)}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
           style={{
-            background: '#dde6f5',
             borderRadius: '16px',
             aspectRatio: '1 / 1',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
             cursor: 'zoom-in',
             position: 'relative',
             overflow: 'hidden',
+            background: '#f1f5f9',
+            boxShadow: hovered ? '0 8px 32px rgba(0,0,0,0.18)' : '0 2px 12px rgba(0,0,0,0.08)',
+            transition: 'box-shadow 0.3s ease',
           }}
         >
           <img
             src={allImages[activeIdx]}
             alt={alt}
             style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'contain',
-              borderRadius: '10px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-              background: '#fff',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',          // fills whole card
+              objectPosition: 'center',
               display: 'block',
-              transition: 'transform 0.3s ease',
+              transform: hovered ? 'scale(1.07)' : 'scale(1)',  // zoom on hover
+              transition: 'transform 0.4s ease',
             }}
             onError={e => { e.target.style.display = 'none' }}
           />
+
           {/* Zoom hint */}
           <div style={{
             position: 'absolute', bottom: '12px', right: '12px',
             background: 'rgba(0,0,0,0.45)', color: '#fff',
-            borderRadius: '8px', padding: '4px 8px',
+            borderRadius: '8px', padding: '4px 10px',
             display: 'flex', alignItems: 'center', gap: '4px',
             fontSize: '11px', backdropFilter: 'blur(4px)',
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 0.2s ease',
           }}>
             <ZoomIn size={12} /> Click to zoom
           </div>
         </div>
 
-        {/* Thumbnails */}
+        {/* Thumbnails — also cover */}
         {allImages.length > 1 && (
           <div style={{ display: 'flex', gap: '8px', marginTop: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
             {allImages.map((img, i) => (
@@ -103,21 +104,30 @@ export default function ImageZoom({ images = [], alt = '' }) {
                 onClick={() => setActiveIdx(i)}
                 style={{
                   flexShrink: 0,
-                  width: '64px',
-                  height: '64px',
+                  width: '68px',
+                  height: '68px',
                   borderRadius: '10px',
                   overflow: 'hidden',
-                  border: i === activeIdx ? '2px solid #2563eb' : '2px solid transparent',
-                  background: '#dde6f5',
-                  padding: '4px',
+                  border: i === activeIdx ? '2.5px solid #2563eb' : '2px solid #e2e8f0',
+                  background: '#f1f5f9',
+                  padding: 0,
                   cursor: 'pointer',
-                  transition: 'border-color 0.15s',
+                  transition: 'border-color 0.15s, transform 0.15s',
+                  transform: i === activeIdx ? 'scale(1.05)' : 'scale(1)',
                 }}
+                onMouseEnter={e => { if (i !== activeIdx) e.currentTarget.style.borderColor = '#93c5fd' }}
+                onMouseLeave={e => { if (i !== activeIdx) e.currentTarget.style.borderColor = '#e2e8f0' }}
               >
                 <img
                   src={img}
                   alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', background: '#fff' }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',      // thumbnails also cover
+                    objectPosition: 'center',
+                    display: 'block',
+                  }}
                   onError={e => { e.target.style.display = 'none' }}
                 />
               </button>
@@ -129,7 +139,7 @@ export default function ImageZoom({ images = [], alt = '' }) {
       {/* Lightbox */}
       {lightbox && (
         <div
-          onClick={() => { if (!zoomed) { setLightbox(false) } }}
+          onClick={() => { if (!zoomed) setLightbox(false) }}
           style={{
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(0,0,0,0.92)',
@@ -144,16 +154,15 @@ export default function ImageZoom({ images = [], alt = '' }) {
               position: 'absolute', top: '16px', right: '16px',
               width: '40px', height: '40px', borderRadius: '50%',
               background: 'rgba(255,255,255,0.15)', border: 'none',
-              color: '#fff', cursor: 'pointer', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
+              color: '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               backdropFilter: 'blur(4px)', zIndex: 10,
-              fontSize: '18px',
             }}
           >
             <X size={20} />
           </button>
 
-          {/* Image counter */}
+          {/* Counter */}
           {allImages.length > 1 && (
             <div style={{
               position: 'absolute', top: '16px', left: '50%', transform: 'translateX(-50%)',
@@ -165,7 +174,7 @@ export default function ImageZoom({ images = [], alt = '' }) {
             </div>
           )}
 
-          {/* Prev arrow */}
+          {/* Prev */}
           {allImages.length > 1 && (
             <button
               onClick={e => { e.stopPropagation(); setLightboxIdx(i => (i - 1 + allImages.length) % allImages.length); setZoomed(false) }}
@@ -173,8 +182,8 @@ export default function ImageZoom({ images = [], alt = '' }) {
                 position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
                 width: '44px', height: '44px', borderRadius: '50%',
                 background: 'rgba(255,255,255,0.15)', border: 'none',
-                color: '#fff', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
+                color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backdropFilter: 'blur(4px)', zIndex: 10,
               }}
             >
@@ -182,7 +191,7 @@ export default function ImageZoom({ images = [], alt = '' }) {
             </button>
           )}
 
-          {/* Next arrow */}
+          {/* Next */}
           {allImages.length > 1 && (
             <button
               onClick={e => { e.stopPropagation(); setLightboxIdx(i => (i + 1) % allImages.length); setZoomed(false) }}
@@ -190,8 +199,8 @@ export default function ImageZoom({ images = [], alt = '' }) {
                 position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
                 width: '44px', height: '44px', borderRadius: '50%',
                 background: 'rgba(255,255,255,0.15)', border: 'none',
-                color: '#fff', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
+                color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 backdropFilter: 'blur(4px)', zIndex: 10,
               }}
             >
@@ -206,8 +215,7 @@ export default function ImageZoom({ images = [], alt = '' }) {
             onMouseLeave={() => { if (zoomed) setPos({ x: 50, y: 50 }) }}
             style={{
               position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '85vh',
+              maxWidth: '90vw', maxHeight: '85vh',
               cursor: zoomed ? 'zoom-out' : 'zoom-in',
               overflow: zoomed ? 'hidden' : 'visible',
               borderRadius: '12px',
@@ -238,7 +246,6 @@ export default function ImageZoom({ images = [], alt = '' }) {
             />
           </div>
 
-          {/* Zoom tip */}
           <div style={{
             position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
             color: 'rgba(255,255,255,0.6)', fontSize: '12px', textAlign: 'center',
@@ -246,7 +253,7 @@ export default function ImageZoom({ images = [], alt = '' }) {
             {zoomed ? 'Move mouse to pan · Click to zoom out' : 'Click image to zoom in · Arrow keys to navigate'}
           </div>
 
-          {/* Thumbnail strip at bottom */}
+          {/* Thumbnail strip */}
           {allImages.length > 1 && (
             <div style={{
               position: 'absolute', bottom: '50px', left: '50%', transform: 'translateX(-50%)',
@@ -257,13 +264,18 @@ export default function ImageZoom({ images = [], alt = '' }) {
                   key={i}
                   onClick={e => { e.stopPropagation(); setLightboxIdx(i); setZoomed(false) }}
                   style={{
-                    width: '48px', height: '48px', borderRadius: '8px',
-                    overflow: 'hidden', border: i === lightboxIdx ? '2px solid #fff' : '2px solid rgba(255,255,255,0.3)',
-                    background: '#1e293b', padding: '2px', cursor: 'pointer',
+                    width: '52px', height: '52px', borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: i === lightboxIdx ? '2.5px solid #fff' : '2px solid rgba(255,255,255,0.3)',
+                    background: '#1e293b', padding: 0, cursor: 'pointer',
                     transition: 'border-color 0.15s',
                   }}
                 >
-                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <img
+                    src={img}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </button>
               ))}
             </div>
