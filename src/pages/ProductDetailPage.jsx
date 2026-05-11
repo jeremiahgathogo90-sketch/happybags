@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { ShoppingCart, Heart, Star, ChevronRight, Minus, Plus, Truck, Shield, RotateCcw, Check } from 'lucide-react'
 import { formatKES, discountPct } from '@/lib/utils'
+import SEO, { absoluteUrl, truncateText } from '@/components/SEO'
 import { useCart } from '@/context/CartContext'
 import { useAuth } from '@/context/AuthContext'
 import ImageZoom from '@/components/ImageZoom'
@@ -86,9 +87,40 @@ export default function ProductDetailPage() {
   const images    = [product.thumbnail, ...(product.images || [])].filter((v, i, a) => v && a.indexOf(v) === i)
   const discount  = discountPct(product.original_price, product.price)
   const outOfStock = product.stock_qty === 0
+  const productDescription = truncateText(product.description || 'Buy ' + product.name + ' from HappyBags Kenya. Quality bags and packaging supplies with delivery across Kenya.', 155)
+  const productImage = images[0] || '/og-image.png'
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: productDescription,
+    image: images.length ? images.map(image => absoluteUrl(image)) : [absoluteUrl('/og-image.png')],
+    brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+    offers: {
+      '@type': 'Offer',
+      url: absoluteUrl('/products/' + product.slug),
+      priceCurrency: 'KES',
+      price: String(product.price),
+      availability: outOfStock ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+    },
+    aggregateRating: product.rating_count > 0 ? {
+      '@type': 'AggregateRating',
+      ratingValue: String(product.rating_avg),
+      reviewCount: String(product.rating_count),
+    } : undefined,
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <SEO
+        title={product.name + ' | HappyBags Kenya'}
+        description={productDescription}
+        path={'/products/' + product.slug}
+        image={productImage}
+        type="product"
+        jsonLd={productJsonLd}
+      />
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6 flex-wrap">

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useParams, Link } from 'react-router-dom'
+import { useSearchParams, useParams, Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { SlidersHorizontal, ChevronDown, X, Search } from 'lucide-react'
+import SEO from '@/components/SEO'
 import ProductCard from '@/components/product/ProductCard'
 import ProductGrid from '@/components/product/ProductGrid'
 
@@ -23,6 +24,7 @@ function Spinner() {
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { slug: categorySlug }          = useParams()
+  const location                         = useLocation()
 
   const [products, setProducts]       = useState([])
   const [categories, setCategories]   = useState([])
@@ -92,9 +94,29 @@ export default function ProductsPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE)
   const activeCat  = categories.find(c => c.slug === catFilter)
+  const isSearchRoute = location.pathname === '/search' || Boolean(search)
+  const isFiltered = isSearchRoute || Boolean(minPrice || maxPrice) || sort !== 'newest' || page > 1
+  const pageHeading = activeCat ? activeCat.name + ' Bags and Packaging' : search ? 'Search results for "' + search + '"' : 'Bags and Packaging Products'
+  const pageDescription = activeCat
+    ? 'Shop ' + activeCat.name.toLowerCase() + ' bags and packaging supplies from HappyBags Kenya with delivery across Kenya and M-Pesa payments.'
+    : search
+      ? 'Search HappyBags Kenya for quality bags, packaging supplies, gift bags, tote bags and more.'
+      : 'Browse quality bags and packaging supplies in Kenya, including non-woven bags, gift bags, tote bags, khaki bags, cups, plates and straws.'
+  const canonicalPath = activeCat ? '/category/' + activeCat.slug : '/products'
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <SEO
+        title={pageHeading + ' | HappyBags Kenya'}
+        description={pageDescription}
+        path={canonicalPath}
+        robots={isFiltered ? 'noindex, follow' : 'index, follow'}
+      />
+
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">{pageHeading}</h1>
+        <p className="text-sm text-gray-500 mt-1 max-w-2xl">{pageDescription}</p>
+      </div>
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">

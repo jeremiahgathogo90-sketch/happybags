@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom'
 import { ShoppingBag, Truck, Shield, Heart, Star, Phone, Mail, MapPin, MessageCircle } from 'lucide-react'
+import SEO from '@/components/SEO'
 
 export default function AboutPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
+      <SEO
+        title="About HappyBags Kenya | Bags and Packaging Store"
+        description="Learn about HappyBags Kenya, a Nairobi-based online store for quality bags and packaging supplies with delivery across Kenya."
+        path="/about"
+      />
 
       {/* Hero */}
       <div style={{

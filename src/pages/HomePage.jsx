@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight, ChevronLeft, Zap, Phone, ShoppingBag, Package, Star, Truck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { timeRemaining, pad2 } from '@/lib/utils'
+import SEO, { DEFAULT_OG_IMAGE, SITE_URL, defaultDescription } from '@/components/SEO'
 import ProductCard from '@/components/product/ProductCard'
 import ProductGrid from '@/components/product/ProductGrid'
 
@@ -133,9 +134,39 @@ export default function HomePage() {
   const ROYAL_BLUE   = '#1d4ed8'
   const DARK_BLUE    = '#1e3a8a'
   const GOLD         = '#f59e0b'
+  const storeJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Store',
+    '@id': SITE_URL + '/#store',
+    name: 'HappyBags Kenya',
+    url: SITE_URL + '/',
+    logo: SITE_URL + '/logo.png',
+    image: SITE_URL + DEFAULT_OG_IMAGE,
+    description: defaultDescription,
+    telephone: '+254716670629',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Nairobi',
+      addressCountry: 'KE',
+    },
+    areaServed: {
+      '@type': 'Country',
+      name: 'Kenya',
+    },
+    priceRange: 'KSh 50 - KSh 5000',
+    currenciesAccepted: 'KES',
+    paymentAccepted: 'M-Pesa, Cash',
+  }
 
   return (
     <main>
+      <SEO
+        title="HappyBags Kenya | Bags and Packaging in Nairobi"
+        description={defaultDescription}
+        path="/"
+        jsonLd={storeJsonLd}
+      />
+
       {/* Announcement Bar */}
       <div style={{ background: ROYAL_BLUE, color: '#fff', padding: '7px 16px', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
         <span>🛍️ Wholesale &amp; Retail — Quality Bags &amp; Packaging Solutions</span>
