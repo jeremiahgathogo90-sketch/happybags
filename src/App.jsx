@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { CartProvider } from '@/context/CartContext'
+import SEO from '@/components/SEO'
 
 import Navbar  from '@/components/layout/Navbar'
 import Footer  from '@/components/layout/Footer'
@@ -63,6 +64,20 @@ function AdminRoute({ children }) {
   return children
 }
 
+function NoIndexPage({ title, path, children }) {
+  return (
+    <>
+      <SEO
+        title={title}
+        description="This page is not intended for search indexing."
+        path={path}
+        robots="noindex, follow"
+      />
+      {children}
+    </>
+  )
+}
+
 function AppRoutes() {
   return (
     <>
@@ -76,23 +91,23 @@ function AppRoutes() {
         <Route path="/about"          element={<><Navbar /><AboutPage /><Footer /></>} />
 
         {/* Guest accessible */}
-        <Route path="/cart"                element={<><Navbar /><CartPage /><Footer /></>} />
-        <Route path="/wishlist"            element={<><Navbar /><WishlistPage /><Footer /></>} />
-        <Route path="/checkout"            element={<><Navbar /><CheckoutPage /></>} />
-        <Route path="/order-confirmed/:id" element={<><Navbar /><OrderConfirmPage /><Footer /></>} />
+        <Route path="/cart"                element={<NoIndexPage title="Cart | HappyBags Kenya" path="/cart"><Navbar /><CartPage /><Footer /></NoIndexPage>} />
+        <Route path="/wishlist"            element={<NoIndexPage title="Wishlist | HappyBags Kenya" path="/wishlist"><Navbar /><WishlistPage /><Footer /></NoIndexPage>} />
+        <Route path="/checkout"            element={<NoIndexPage title="Checkout | HappyBags Kenya" path="/checkout"><Navbar /><CheckoutPage /></NoIndexPage>} />
+        <Route path="/order-confirmed/:id" element={<NoIndexPage title="Order Confirmation | HappyBags Kenya" path="/order-confirmed"><Navbar /><OrderConfirmPage /><Footer /></NoIndexPage>} />
 
         {/* Auth */}
-        <Route path="/login"         element={<LoginPage />} />
-        <Route path="/register"      element={<RegisterPage />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/login"         element={<NoIndexPage title="Sign In | HappyBags Kenya" path="/login"><LoginPage /></NoIndexPage>} />
+        <Route path="/register"      element={<NoIndexPage title="Create Account | HappyBags Kenya" path="/register"><RegisterPage /></NoIndexPage>} />
+        <Route path="/auth/callback" element={<NoIndexPage title="Auth Callback | HappyBags Kenya" path="/auth/callback"><AuthCallback /></NoIndexPage>} />
 
         {/* Protected — login required */}
-        <Route path="/orders"  element={<ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute>} />
+        <Route path="/orders"  element={<NoIndexPage title="Orders | HappyBags Kenya" path="/orders"><ProtectedRoute><Navbar /><OrdersPage /><Footer /></ProtectedRoute></NoIndexPage>} />
+        <Route path="/profile" element={<NoIndexPage title="Profile | HappyBags Kenya" path="/profile"><ProtectedRoute><Navbar /><ProfilePage /><Footer /></ProtectedRoute></NoIndexPage>} />
 
         {/* Admin */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route path="/admin/login" element={<NoIndexPage title="Admin Login | HappyBags Kenya" path="/admin/login"><AdminLogin /></NoIndexPage>} />
+        <Route path="/admin" element={<NoIndexPage title="Admin | HappyBags Kenya" path="/admin"><AdminRoute><AdminLayout /></AdminRoute></NoIndexPage>}>
           <Route index              element={<AdminDashboard />} />
           <Route path="products"    element={<AdminProducts />} />
           <Route path="orders"      element={<AdminOrders />} />

@@ -2,9 +2,16 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/
-Disallow: /checkout
+Disallow: /admin/login
+Disallow: /auth/
 Disallow: /cart
+Disallow: /checkout
+Disallow: /login
 Disallow: /orders
+Disallow: /order-confirmed
 Disallow: /profile
+Disallow: /register
+Disallow: /search
+Disallow: /wishlist
 
 Sitemap: https://happybags.co.ke/sitemap.xml
