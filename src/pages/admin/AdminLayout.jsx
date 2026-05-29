@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom'
 import {
   LayoutDashboard, Package, ShoppingBag, Users, Tag,
   Zap, Image, LogOut, Menu, X, Store, ChevronRight,
-  Truck, Settings
+  Truck, Settings, FileText
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 
@@ -15,6 +15,7 @@ const NAV = [
   { to: '/admin/users',       icon: Users,           label: 'Customers' },
   { to: '/admin/flash-sales', icon: Zap,             label: 'Flash Sales' },
   { to: '/admin/banners',     icon: Image,           label: 'Banners' },
+  { to: '/admin/blog',        icon: FileText,        label: 'Blog' },
   { to: '/admin/shipping',    icon: Truck,           label: 'Shipping' },
   { to: '/admin/settings',    icon: Settings,        label: 'Settings' },
 ]

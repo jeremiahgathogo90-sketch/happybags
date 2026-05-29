@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import { ShoppingBag, Package, Users, TrendingUp, Clock, ChevronRight, AlertCircle, Tag, Zap, Image } from 'lucide-react'
+import { ShoppingBag, Package, Users, TrendingUp, Clock, ChevronRight, AlertCircle, Tag, Zap, Image, FileText } from 'lucide-react'
 import { formatKES } from '@/lib/utils'
 
 export default function AdminDashboard() {
@@ -144,12 +144,13 @@ export default function AdminDashboard() {
       {/* Quick actions */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: 'Add Product',    to: '/admin/products?new=1',    icon: Package,    color: 'text-blue-600 bg-blue-50 hover:bg-blue-100' },
             { label: 'Add Category',   to: '/admin/categories?new=1',  icon: Tag,        color: 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' },
             { label: 'Create Flash Sale', to: '/admin/flash-sales?new=1', icon: Zap,     color: 'text-orange-600 bg-orange-50 hover:bg-orange-100' },
             { label: 'Add Banner',     to: '/admin/banners?new=1',     icon: Image,      color: 'text-cyan-600 bg-cyan-50 hover:bg-cyan-100' },
+            { label: 'Add Blog Post',   to: '/admin/blog?new=1',        icon: FileText,   color: 'text-green-600 bg-green-50 hover:bg-green-100' },
           ].map(({ label, to, icon: Icon, color }) => (
             <Link key={label} to={to} className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors text-center font-medium text-sm ${color}`}>
               <Icon size={22} />

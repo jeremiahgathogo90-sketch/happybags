@@ -259,6 +259,9 @@ export default function Navbar() {
             <Link to="/about" className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
               About Us
             </Link>
+            <Link to="/blog" className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+              Blog
+            </Link>
             {categories.map(cat => (
               <Link
                 key={cat.id}
@@ -307,6 +310,12 @@ export default function Navbar() {
           <div className="flex flex-wrap gap-2 mb-4">
             <Link to="/products" onClick={() => setMobileOpen(false)} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700">
               All Products
+            </Link>
+            <Link to="/about" onClick={() => setMobileOpen(false)} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700">
+              About Us
+            </Link>
+            <Link to="/blog" onClick={() => setMobileOpen(false)} className="text-xs px-3 py-1.5 bg-gray-100 rounded-full text-gray-700">
+              Blog
             </Link>
             {categories.map(cat => (
               <Link

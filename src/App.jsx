@@ -18,6 +18,8 @@ import OrderConfirmPage  from '@/pages/OrderConfirmPage'
 import OrdersPage        from '@/pages/OrdersPage'
 import ProfilePage       from '@/pages/ProfilePage'
 import AboutPage         from '@/pages/AboutPage'
+import BlogPage          from '@/pages/BlogPage'
+import BlogPostPage      from '@/pages/BlogPostPage'
 
 import LoginPage    from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -34,6 +36,7 @@ import AdminFlashSales from '@/pages/admin/AdminFlashSales'
 import AdminBanners    from '@/pages/admin/AdminBanners'
 import AdminShipping   from '@/pages/admin/AdminShipping'
 import AdminSettings   from '@/pages/admin/AdminSettings'
+import AdminBlog       from '@/pages/admin/AdminBlog'
 
 function MiniSpinner() {
   return (
@@ -89,6 +92,8 @@ function AppRoutes() {
         <Route path="/category/:slug" element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/search"         element={<><Navbar /><ProductsPage /><Footer /></>} />
         <Route path="/about"          element={<><Navbar /><AboutPage /><Footer /></>} />
+        <Route path="/blog"           element={<><Navbar /><BlogPage /><Footer /></>} />
+        <Route path="/blog/:slug"     element={<><Navbar /><BlogPostPage /><Footer /></>} />
 
         {/* Guest accessible */}
         <Route path="/cart"                element={<NoIndexPage title="Cart | HappyBags Kenya" path="/cart"><Navbar /><CartPage /><Footer /></NoIndexPage>} />
@@ -115,6 +120,7 @@ function AppRoutes() {
           <Route path="categories"  element={<AdminCategories />} />
           <Route path="flash-sales" element={<AdminFlashSales />} />
           <Route path="banners"     element={<AdminBanners />} />
+          <Route path="blog"        element={<AdminBlog />} />
           <Route path="shipping"    element={<AdminShipping />} />
           <Route path="settings"    element={<AdminSettings />} />
         </Route>

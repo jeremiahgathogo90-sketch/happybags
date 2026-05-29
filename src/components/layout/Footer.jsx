@@ -17,6 +17,7 @@ export default function Footer() {
               <li><Link to="/products" className="hover:text-white transition-colors">All Products</Link></li>
               <li><Link to="/products?flash=true" className="hover:text-white transition-colors">Flash Sales</Link></li>
               <li><Link to="/products?sort=newest" className="hover:text-white transition-colors">New Arrivals</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
             </ul>
           </div>
           <div>
@@ -27,6 +28,7 @@ export default function Footer() {
               <li><Link to="/orders" className="hover:text-white transition-colors">My Orders</Link></li>
               <li><Link to="/wishlist" className="hover:text-white transition-colors">My Wishlist</Link></li>
               <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors">Packaging Guides</Link></li>
             </ul>
           </div>
           <div>
