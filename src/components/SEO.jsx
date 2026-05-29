@@ -64,6 +64,7 @@ export default function SEO({
   description = defaultDescription,
   path = '/',
   image = DEFAULT_OG_IMAGE,
+  imageAlt = 'HappyBags Kenya bags and packaging supplies',
   type = 'website',
   robots = 'index, follow',
   jsonLd,
@@ -84,16 +85,20 @@ export default function SEO({
     upsertMeta('property', 'og:title', title)
     upsertMeta('property', 'og:description', safeDescription)
     upsertMeta('property', 'og:image', imageUrl)
+    upsertMeta('property', 'og:image:secure_url', imageUrl)
+    upsertMeta('property', 'og:image:type', 'image/png')
     upsertMeta('property', 'og:image:width', '1200')
     upsertMeta('property', 'og:image:height', '630')
+    upsertMeta('property', 'og:image:alt', imageAlt)
     upsertMeta('property', 'og:site_name', SITE_NAME)
     upsertMeta('property', 'og:locale', 'en_KE')
     upsertMeta('name', 'twitter:card', 'summary_large_image')
     upsertMeta('name', 'twitter:title', title)
     upsertMeta('name', 'twitter:description', safeDescription)
     upsertMeta('name', 'twitter:image', imageUrl)
+    upsertMeta('name', 'twitter:image:alt', imageAlt)
     setJsonLd(jsonLdText)
-  }, [canonicalUrl, imageUrl, jsonLdText, robots, safeDescription, title, type])
+  }, [canonicalUrl, imageAlt, imageUrl, jsonLdText, robots, safeDescription, title, type])
 
   return null
 }
