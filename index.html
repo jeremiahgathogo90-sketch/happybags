@@ -3,9 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo.png" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1d4ed8" />
+    <meta name="application-name" content="HappyBags Kenya" />
+    <meta name="apple-mobile-web-app-title" content="HappyBags" />
 
     <!-- Primary SEO -->
     <title>HappyBags Kenya | Bags and Packaging in Nairobi</title>
@@ -20,6 +23,8 @@
     <meta property="og:title" content="HappyBags Kenya | Bags and Packaging in Nairobi" />
     <meta property="og:description" content="Shop quality bags and packaging supplies in Kenya, including non-woven bags, gift bags, tote bags, khaki bags, cups, plates and straws." />
     <meta property="og:image" content="https://happybags.co.ke/og-image.png" />
+    <meta property="og:image:secure_url" content="https://happybags.co.ke/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="HappyBags Kenya bags and packaging supplies" />
@@ -41,26 +46,44 @@
     <script id="structured-data" type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Store",
-      "@id": "https://happybags.co.ke/#store",
-      "name": "HappyBags Kenya",
-      "url": "https://happybags.co.ke/",
-      "logo": "https://happybags.co.ke/logo.png",
-      "image": "https://happybags.co.ke/og-image.png",
-      "description": "Shop quality bags and packaging supplies in Kenya. Find non-woven bags, gift bags, tote bags, khaki bags, cups, plates, straws and more from HappyBags Kenya.",
-      "telephone": "+254716670629",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "Nairobi",
-        "addressCountry": "KE"
-      },
-      "areaServed": {
-        "@type": "Country",
-        "name": "Kenya"
-      },
-      "priceRange": "KSh 50 - KSh 5000",
-      "currenciesAccepted": "KES",
-      "paymentAccepted": "M-Pesa, Cash"
+      "@graph": [
+        {
+          "@type": "Store",
+          "@id": "https://happybags.co.ke/#store",
+          "name": "HappyBags Kenya",
+          "url": "https://happybags.co.ke/",
+          "logo": "https://happybags.co.ke/logo.png",
+          "image": "https://happybags.co.ke/og-image.png",
+          "description": "Shop quality bags and packaging supplies in Kenya. Find non-woven bags, gift bags, tote bags, khaki bags, cups, plates, straws and more from HappyBags Kenya.",
+          "telephone": "+254716670629",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Nairobi",
+            "addressCountry": "KE"
+          },
+          "areaServed": {
+            "@type": "Country",
+            "name": "Kenya"
+          },
+          "priceRange": "KSh 50 - KSh 5000",
+          "currenciesAccepted": "KES",
+          "paymentAccepted": "M-Pesa, Cash"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://happybags.co.ke/#website",
+          "url": "https://happybags.co.ke/",
+          "name": "HappyBags Kenya",
+          "publisher": {
+            "@id": "https://happybags.co.ke/#store"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://happybags.co.ke/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
     }
     </script>
 

@@ -135,7 +135,6 @@ export default function HomePage() {
   const DARK_BLUE    = '#1e3a8a'
   const GOLD         = '#f59e0b'
   const storeJsonLd = {
-    '@context': 'https://schema.org',
     '@type': 'Store',
     '@id': SITE_URL + '/#store',
     name: 'HappyBags Kenya',
@@ -157,6 +156,24 @@ export default function HomePage() {
     currenciesAccepted: 'KES',
     paymentAccepted: 'M-Pesa, Cash',
   }
+  const websiteJsonLd = {
+    '@type': 'WebSite',
+    '@id': SITE_URL + '/#website',
+    url: SITE_URL + '/',
+    name: 'HappyBags Kenya',
+    publisher: {
+      '@id': SITE_URL + '/#store',
+    },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: SITE_URL + '/search?q={search_term_string}',
+      'query-input': 'required name=search_term_string',
+    },
+  }
+  const homeJsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [storeJsonLd, websiteJsonLd],
+  }
 
   return (
     <main>
@@ -164,7 +181,7 @@ export default function HomePage() {
         title="HappyBags Kenya | Bags and Packaging in Nairobi"
         description={defaultDescription}
         path="/"
-        jsonLd={storeJsonLd}
+        jsonLd={homeJsonLd}
       />
 
       {/* Announcement Bar */}
