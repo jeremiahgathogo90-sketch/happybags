@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, X, Upload, Link as LinkIcon } from 'lucide-react'
 import toast from 'react-hot-toast'

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Search, X, Shield } from 'lucide-react'
 import { initials } from '@/lib/utils'

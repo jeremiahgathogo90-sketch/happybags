@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export function useProducts({ categorySlug, search, featured, limit = 20, sort = 'created_at' } = {}) {

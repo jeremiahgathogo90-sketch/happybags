@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle, Package, Truck, Phone, MapPin, ArrowRight, Printer } from 'lucide-react'

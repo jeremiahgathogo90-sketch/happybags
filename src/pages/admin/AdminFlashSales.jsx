@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Trash2, X, Zap, Search } from 'lucide-react'
 import { formatKES } from '@/lib/utils'
