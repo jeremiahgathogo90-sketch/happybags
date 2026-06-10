@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
@@ -18,8 +19,6 @@ import OrderConfirmPage  from '@/pages/OrderConfirmPage'
 import OrdersPage        from '@/pages/OrdersPage'
 import ProfilePage       from '@/pages/ProfilePage'
 import AboutPage         from '@/pages/AboutPage'
-import BlogPage          from '@/pages/BlogPage'
-import BlogPostPage      from '@/pages/BlogPostPage'
 
 import LoginPage    from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
@@ -36,7 +35,10 @@ import AdminFlashSales from '@/pages/admin/AdminFlashSales'
 import AdminBanners    from '@/pages/admin/AdminBanners'
 import AdminShipping   from '@/pages/admin/AdminShipping'
 import AdminSettings   from '@/pages/admin/AdminSettings'
-import AdminBlog       from '@/pages/admin/AdminBlog'
+
+const BlogPage = lazy(() => import('@/pages/BlogPage'))
+const BlogPostPage = lazy(() => import('@/pages/BlogPostPage'))
+const AdminBlog = lazy(() => import('@/pages/admin/AdminBlog'))
 
 function MiniSpinner() {
   return (
@@ -84,7 +86,8 @@ function NoIndexPage({ title, path, children }) {
 function AppRoutes() {
   return (
     <>
-      <Routes>
+      <Suspense fallback={<MiniSpinner />}>
+        <Routes>
         {/* Public — loads instantly, no auth check needed */}
         <Route path="/"               element={<><Navbar /><HomePage /><Footer /></>} />
         <Route path="/products"       element={<><Navbar /><ProductsPage /><Footer /></>} />
@@ -125,8 +128,9 @@ function AppRoutes() {
           <Route path="settings"    element={<AdminSettings />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
 
       <WhatsAppButton
         phone="254716670629"

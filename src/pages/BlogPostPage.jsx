@@ -4,6 +4,7 @@ import { Calendar, ArrowLeft, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import SEO, { SITE_URL, absoluteUrl, truncateText } from '@/components/SEO'
 import BlogCard from '@/components/blog/BlogCard'
+import BlogContent, { markdownToPlainText } from '@/components/blog/BlogContent'
 
 function formatDate(value) {
   if (!value) return ''
@@ -92,7 +93,7 @@ export default function BlogPostPage() {
     )
   }
 
-  const description = post.seo_description || post.excerpt || truncateText(post.content, 155)
+  const description = post.seo_description || post.excerpt || truncateText(markdownToPlainText(post.content), 155)
   const image = post.og_image || post.cover_image || '/og-image.png'
   const canonical = post.canonical_url || '/blog/' + post.slug
   const articleJsonLd = {
@@ -173,9 +174,7 @@ export default function BlogPostPage() {
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl p-6 md:p-8">
-          <div className="text-gray-700 leading-8 whitespace-pre-line">
-            {post.content}
-          </div>
+          <BlogContent content={post.content} />
 
           {Array.isArray(post.tags) && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-gray-100">
