@@ -205,8 +205,8 @@ If Supabase tables need to stay, leave them in place. Removing the frontend merg
 
 ## Notes For The Developer
 
-The blog content field is rendered as plain text with line breaks preserved. Do not paste unsafe HTML into the content field.
+The blog content field supports Markdown formatting. The admin editor includes controls for headings, bold text, italics, lists, quotes, links, inline code, and dividers, plus a preview mode.
 
-If rich text or Markdown is needed later, add a safe renderer and sanitizer first.
+Raw HTML is not rendered. This keeps blog content safer while allowing structured formatting.
 
 This is still a React single-page app, so Google can render the blog metadata, but some social media bots may only read the static `index.html` metadata. Full server-side rendering or pre-rendering can be considered later for perfect post-specific social previews.

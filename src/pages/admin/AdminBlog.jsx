@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { slugify, truncate } from '@/lib/utils'
+import MarkdownEditor from '@/components/blog/MarkdownEditor'
 import toast from 'react-hot-toast'
 
 const EMPTY = {
@@ -460,8 +461,16 @@ export default function AdminBlog() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
-                <textarea value={form.content} onChange={set('content')} rows={10} required placeholder="Write the blog post content here. Line breaks will be preserved on the website." className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                <label htmlFor="blog-content" className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
+                <MarkdownEditor
+                  id="blog-content"
+                  value={form.content}
+                  onChange={set('content')}
+                  required
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Use Write to edit and Preview to check the final formatting before publishing.
+                </p>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
