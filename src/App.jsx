@@ -39,6 +39,7 @@ import AdminSettings   from '@/pages/admin/AdminSettings'
 const BlogPage = lazy(() => import('@/pages/BlogPage'))
 const BlogPostPage = lazy(() => import('@/pages/BlogPostPage'))
 const AdminBlog = lazy(() => import('@/pages/admin/AdminBlog'))
+const AdminBlogEditor = lazy(() => import('@/pages/admin/AdminBlogEditor'))
 
 function MiniSpinner() {
   return (
@@ -124,6 +125,8 @@ function AppRoutes() {
           <Route path="flash-sales" element={<AdminFlashSales />} />
           <Route path="banners"     element={<AdminBanners />} />
           <Route path="blog"        element={<AdminBlog />} />
+          <Route path="blog/new"    element={<AdminBlogEditor />} />
+          <Route path="blog/:id/edit" element={<AdminBlogEditor />} />
           <Route path="shipping"    element={<AdminShipping />} />
           <Route path="settings"    element={<AdminSettings />} />
         </Route>

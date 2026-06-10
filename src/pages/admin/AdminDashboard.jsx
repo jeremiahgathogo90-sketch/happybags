@@ -150,7 +150,7 @@ export default function AdminDashboard() {
             { label: 'Add Category',   to: '/admin/categories?new=1',  icon: Tag,        color: 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' },
             { label: 'Create Flash Sale', to: '/admin/flash-sales?new=1', icon: Zap,     color: 'text-orange-600 bg-orange-50 hover:bg-orange-100' },
             { label: 'Add Banner',     to: '/admin/banners?new=1',     icon: Image,      color: 'text-cyan-600 bg-cyan-50 hover:bg-cyan-100' },
-            { label: 'Add Blog Post',   to: '/admin/blog?new=1',        icon: FileText,   color: 'text-green-600 bg-green-50 hover:bg-green-100' },
+            { label: 'Add Blog Post',   to: '/admin/blog/new',          icon: FileText,   color: 'text-green-600 bg-green-50 hover:bg-green-100' },
           ].map(({ label, to, icon: Icon, color }) => (
             <Link key={label} to={to} className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-colors text-center font-medium text-sm ${color}`}>
               <Icon size={22} />

@@ -53,6 +53,15 @@ Admins can create, edit, publish, unpublish, delete, and manage blog posts from 
 
 Admins can upload blog cover images to Supabase Storage.
 
+Creating and editing posts now happens on a dedicated full-page writing screen:
+
+```text
+/admin/blog/new
+/admin/blog/:id/edit
+```
+
+The writing screen includes a side guide with article structure, formatting examples, SEO checks, and a before-publishing checklist.
+
 The blog pages use the existing SEO component, so blog pages can have proper titles, descriptions, canonical URLs, Open Graph images, Twitter cards, and BlogPosting structured data.
 
 The sitemap now includes:
